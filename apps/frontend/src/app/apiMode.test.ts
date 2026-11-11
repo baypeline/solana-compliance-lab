@@ -1,4 +1,4 @@
-import { demoScenarioIds } from '../contracts/catalog'
+import { demoScenarioIds, fixtureScenarios } from '../contracts/catalog'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { getModeOverride, resolveApiMode, scenariosFor, setModeOverride } from './apiMode'
 
@@ -32,5 +32,12 @@ describe('API mode', () => {
     const hidden = ids('backend', false)
     expect(hidden.some((id) => demoScenarioIds.includes(id))).toBe(false)
     expect(hidden).toEqual(expect.arrayContaining(['sender', 'sanctioned']))
+  })
+
+  it('offers recorded mainnet data only when requests go to the Backend', () => {
+    const recorded = fixtureScenarios.filter((s) => s.provenance.dataType === 'ON_CHAIN').map((s) => s.fixtureId)
+    expect(recorded).toHaveLength(4)
+    expect(scenariosFor('backend', false).map((s) => s.fixtureId)).toEqual(expect.arrayContaining(recorded))
+    expect(scenariosFor('mock').some((s) => recorded.includes(s.fixtureId))).toBe(false)
   })
 })

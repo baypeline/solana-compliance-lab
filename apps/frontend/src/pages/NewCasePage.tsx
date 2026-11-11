@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router'
 import { currentApiMode, scenariosFor } from '../app/apiMode'
 import { getIdentity } from '../app/identity'
 import { useApi } from '../app/useApi'
+import { scenarioSender } from '../contracts/catalog'
 import { newCaseId, type CaseRecord, type CaseRun, type RunStep, type StoredError } from '../cases/model'
 import { useCases } from '../cases/useCases'
 import { runCase, type RunCaseOptions, type RunProgress } from '../flow/runCase'
@@ -93,8 +94,8 @@ export function NewCasePage({ runOptions }: { runOptions?: Partial<RunCaseOption
 
       {!busy && (
         <ScenarioList
-          current={form.mode === 'FIXTURE' && form.senderFx === 'sender' ? form.recipientFx : null}
-          onPick={(fixtureId) => set({ mode: 'FIXTURE', senderFx: 'sender', recipientFx: fixtureId })}
+          current={form.mode === 'FIXTURE' ? form.recipientFx : null}
+          onPick={(fixtureId) => set({ mode: 'FIXTURE', senderFx: scenarioSender(fixtureId), recipientFx: fixtureId })}
         />
       )}
     </main>

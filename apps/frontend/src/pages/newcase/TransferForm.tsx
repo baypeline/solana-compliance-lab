@@ -6,9 +6,8 @@ import { findScenario, policyVersions, rulesetVersions } from '../../contracts/c
 import { scenarioName } from './scenarioName'
 import { useT } from '../../i18n/hooks'
 import { parseDecimalToRaw } from '../../lib/amount'
+import { formatUtc } from '../../lib/format'
 import type { FormErrors, FormState } from './form'
-
-const SYNTHETIC = { dataType: 'SYNTHETIC' as const, source: 'contracts/fixtures', reference: null }
 
 function Err({ e }: { e?: FormErrors[keyof FormErrors] }) {
   const t = useT()
@@ -20,7 +19,7 @@ function Party({ side, form, set, errors }: { side: 'sender' | 'recipient'; form
   const fxKey = side === 'sender' ? 'senderFx' : 'recipientFx'
   const addrKey = side === 'sender' ? 'senderAddr' : 'recipientAddr'
   const id = `nc-${side}`
-  const fixtureAddress = findScenario(form[fxKey])?.request.address
+  const scenario = findScenario(form[fxKey])
   return (
     <div className="party">
       <span className="party-label">{t(side === 'sender' ? 'ui.newcase.sender' : 'ui.newcase.recipient')}</span>
@@ -31,12 +30,18 @@ function Party({ side, form, set, errors }: { side: 'sender' | 'recipient'; form
             <select id={id} className="input" value={form[fxKey]} onChange={(e) => set({ [fxKey]: e.target.value })}>
               {scenariosFor(currentApiMode()).map((s) => (
                 <option key={s.fixtureId} value={s.fixtureId}>
-                  {scenarioName(s.fixtureId)}
+                  {scenarioName(s.fixtureId)} · {t(s.provenance.dataType === 'ON_CHAIN' ? 'ui.newcase.recordedMainnet' : 'ui.data.SYNTHETIC')}
                 </option>
               ))}
             </select>
           </div>
-          {fixtureAddress && <AddressChip address={fixtureAddress} provenance={SYNTHETIC} full />}
+          {scenario && <AddressChip address={scenario.request.address} provenance={scenario.provenance} full />}
+          {scenario?.provenance.dataType === 'ON_CHAIN' && (
+            <div className="hint">
+              <p>{t('ui.newcase.recordedSource', { source: scenario.provenance.source, capturedAt: formatUtc(scenario.capturedAt) })}</p>
+              <p>{t('ui.newcase.recordedScope', { from: formatUtc(scenario.request.scope.fromTime), to: formatUtc(scenario.request.scope.toTime), max: scenario.request.scope.maxTransactions })}</p>
+            </div>
+          )}
         </>
       ) : (
         <div className="field">

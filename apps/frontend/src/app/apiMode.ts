@@ -65,5 +65,8 @@ export const constellationModelOptions: string[] = Array.from(
 export const demoOnBackend: boolean = import.meta.env.VITE_DEMO_FIXTURES !== 'off'
 
 export function scenariosFor(mode: ApiMode, onBackend: boolean = demoOnBackend): FixtureScenario[] {
-  return mode === 'backend' && !onBackend ? fixtureScenarios.filter((s) => !demoScenarioIds.includes(s.fixtureId)) : fixtureScenarios
+  return fixtureScenarios.filter((s) => {
+    if (s.provenance.dataType === 'ON_CHAIN' && mode !== 'backend') return false
+    return !(mode === 'backend' && !onBackend && demoScenarioIds.includes(s.fixtureId))
+  })
 }

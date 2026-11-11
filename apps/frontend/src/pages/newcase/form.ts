@@ -1,7 +1,7 @@
 // New-case form state and its validation into a CaseInput. Only input checks; no policy logic.
 import type { Asset, Mode } from '../../api/types'
 import type { CaseInput } from '../../cases/model'
-import { findScenario, policyVersions } from '../../contracts/catalog'
+import { findScenario, policyVersions, scenarioSender } from '../../contracts/catalog'
 import type { MessageKey } from '../../i18n/hooks'
 import { parseDecimalToRaw } from '../../lib/amount'
 import { localInputToUtc } from '../../lib/format'
@@ -34,10 +34,11 @@ function utcInput(d: Date): string {
 
 /** `offered` is the scenario ids on offer, in order; the form starts on the first that is not the common sender. */
 export function initialForm(now = new Date(), offered: string[] = ['sender', 'demo-layering']): FormState {
+  const recipientFx = offered.find((id) => id !== 'sender') ?? 'sender'
   return {
     mode: 'FIXTURE',
-    senderFx: 'sender',
-    recipientFx: offered.find((id) => id !== 'sender') ?? 'sender',
+    senderFx: scenarioSender(recipientFx),
+    recipientFx,
     senderAddr: '',
     recipientAddr: '',
     assetType: 'SOL',

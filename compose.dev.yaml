@@ -21,6 +21,7 @@ services:
     - ./apps/frontend/index.html:/workspace/apps/frontend/index.html:ro
     - ./apps/frontend/vite.config.ts:/workspace/apps/frontend/vite.config.ts:ro
     - ./contracts:/workspace/contracts:ro
+    - ./services/collector/fixtures:/workspace/services/collector/fixtures:ro
     depends_on:
       backend:
         condition: service_healthy

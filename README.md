@@ -1,244 +1,219 @@
 # 이상거래 — Solana Compliance Lab
 
-실제 Solana 데이터의 위험 신호 탐지와 서비스 제출 경로의 컴플라이언스 통제 범위를 검증하는 오프체인 PoC입니다. 실제 거래 전송이나 스마트 컨트랙트 배포는 수행하지 않습니다.
+Solana 지갑의 거래 이력에서 위험 신호를 탐지하고, 거래 의도에 대한 정책 결정과 제출 경로의 통제 범위를 확인하는 오프체인 PoC입니다.
 
-현재 **Frontend, Collector, KYT Detection Engine, Compliance Policy Engine, Backend API, Mock Gateway, Constellation Simulator**가 구현되어 있습니다. 공통 계약과 Fixture로 모듈을 독립 개발·검증할 수 있습니다.
+저장된 실제 메인넷 데이터와 합성 데이터로 분석을 재현하거나, RPC를 연결해 요청 시점의 데이터를 수집할 수 있습니다. 불법 거래 여부를 확정하지 않으며, 실제 거래 전송이나 스마트 컨트랙트 배포는 수행하지 않습니다.
 
-## 모듈 구성
+## 빠르게 실행하기
 
-| 모듈 | 경로 | 포트 | 역할 |
-| --- | --- | --- | --- |
-| Frontend | `apps/frontend/` | 5173 | React·Vite 화면 및 Backend Public API 연결 |
-| Backend API & Orchestrator | `apps/backend/` | 8080 | 분석 작업 상태 관리, 정책 심사 및 실험 API, 내부 모듈 호출 |
-| Collector | `services/collector/` | 8000 | 온디맨드 거래 수집·정규화. LIVE(Solana RPC)와 FIXTURE(실제 메인넷·합성) 모드 |
-| KYT Detection Engine | `services/kyt-engine/` | 8001 | 위험 신호 탐지 및 평가 |
-| Compliance Policy Engine | `services/policy-engine/` | 8002 | 정책 결정 |
-| Mock Gateway | `simulations/gateway/` | 8003 | 제출 경로의 정책 집행 재현 |
-| Constellation Simulator | `simulations/constellation/` | 8004 | Constellation 초안·단일 리더 모델 비교 |
-
-```text
-Frontend ──▶ Backend (Public API, :8080)
-               ├─▶ Collector       :8000  POST /internal/v1/collect
-               ├─▶ KYT Engine      :8001  POST /internal/v1/kyt/evaluate
-               ├─▶ Policy Engine   :8002  POST /internal/v1/policy/decide
-               ├─▶ Mock Gateway    :8003  POST /internal/v1/gateway/experiment
-               └─▶ Constellation   :8004  POST /internal/v1/constellation/simulate
-```
-
-Java 모듈과 빌드·실행 도구는 [baypeline/be](https://github.com/baypeline/be)의 `f469cd1c46640d4870f14f7490088dac589e1c0d` 커밋에서 가져왔습니다.
-
-## Docker로 실행
-
-Docker와 Docker Compose만 설치되어 있으면 호스트에 JDK·Maven·Python을 설치하지 않아도 됩니다. `compose.dev.yaml`과 `compose.prod.yaml`은 각각 모든 서비스 설정을 포함하는 독립 파일입니다.
-
-### 개발 환경
+Docker와 Docker Compose가 필요합니다. 저장소 루트에서 실행합니다. Node.js·Python·JDK·Maven은 컨테이너 안에서 준비되므로 호스트에 별도로 설치하지 않아도 됩니다.
 
 ```bash
 docker compose -f compose.dev.yaml up --build -d --wait
+```
+
+- Frontend: [http://localhost:5173](http://localhost:5173)
+- Backend 상태: [http://localhost:8080/health](http://localhost:8080/health)
+- 저장된 데이터로 분석할 때는 RPC API 키가 필요하지 않습니다.
+
+```bash
+# 상태와 로그
 docker compose -f compose.dev.yaml ps
-docker compose -f compose.dev.yaml logs -f backend
-# 종료
+docker compose -f compose.dev.yaml logs -f frontend backend collector
+
+# 종료: Backend 메모리의 분석·심사 기록은 사라짐
 docker compose -f compose.dev.yaml down
 ```
 
-Frontend는 `http://localhost:5173`에서 열립니다. Vite 개발 서버가 컨테이너 내부 Backend로 `/api` 요청을 프록시하며, FE 소스 변경은 HMR로 반영됩니다. FE는 Backend 모드로 실행하고 Collector에 없는 FE 전용 데모 fixture는 숨깁니다.
+## 화면에서 저장된 데이터 분석하기
 
-Backend(`http://localhost:8080`)와 내부 모듈(8000~8004)은 호스트의 루프백 주소로 노출됩니다. Collector는 compose 서비스로 실행되며 Backend는 `COLLECTOR_URL=http://collector:8000`으로 호출합니다. FIXTURE 모드는 API 키 없이 동작합니다. LIVE 모드를 쓰려면 저장소 루트의 `.env`에 `SOLANA_RPC_URL`과 `SOLANA_RPC_API_KEY`를 설정합니다(`.env.example` 참고). 화면 확인용 Constellation mock 버전도 활성화됩니다.
+1. Frontend에 접속하고 이름 입력 화면이 나오면 입력합니다. 이름은 브라우저에만 저장하는 데모용 식별자입니다.
+2. **Settings → Use the Backend**로 Backend 모드를 선택합니다. Compose 실행의 기본값은 Backend입니다.
+3. **New case → Fixture data**에서 **Mainnet:**으로 시작하는 시나리오 카드를 선택합니다.
+4. 송신자·수신자와 금액·자산을 확인하고 **Run case**를 누릅니다.
+5. 두 지갑의 위험 점수·탐지 근거·수집 범위와 최종 정책 결정을 확인합니다.
 
-Java는 컨테이너의 JDK·Maven으로 실행하며 Maven 다운로드는 볼륨에 캐시합니다. Python은 editable 설치를 사용합니다. 소스와 fixture는 읽기 전용으로 마운트되며, 코드 변경 후 해당 서비스를 `docker compose -f compose.dev.yaml restart backend`와 같이 재시작합니다. 자동 재시작은 제공하지 않습니다. 의존성·POM·Dockerfile 변경 시에는 `up --build -d`로 이미지를 다시 빌드합니다.
+메인넷 카드를 선택하면 송신자는 실제 정상 지갑 수집본으로 맞춰집니다. 송신자와 수신자는 개별 선택도 가능합니다. 각 지갑 아래에서 데이터 출처, 수집 시각, 저장 당시의 조회 구간과 거래 상한을 확인할 수 있습니다.
 
-컨테이너 안에서 테스트도 실행할 수 있습니다.
+이 흐름은 저장된 수집본을 Collector가 읽고 KYT·Policy가 다시 평가하는 방식입니다. 새 RPC 조회나 송금은 하지 않습니다. 화면에 입력한 송금 의도는 가상 실험이며, 해당 송금이 실제 발생했다는 의미가 아닙니다.
 
-```bash
-# Java 세 모듈의 단위·API 테스트
-docker compose -f compose.dev.yaml run --rm --no-deps backend mvn -B -ntp test
-# Python 엔진·공통 계약 테스트
-docker compose -f compose.dev.yaml exec -T kyt-engine python -m pytest -q -p no:cacheprovider
-# 서비스 기동 후 전체 API 흐름 검증
-docker compose -f compose.dev.yaml exec -T -e BACKEND_URL=http://backend:8080 kyt-engine python scripts/e2e_smoke.py /app
+### 제공 데이터
+
+실제 메인넷 수집본은 [services/collector/fixtures](services/collector/fixtures)에 있습니다. 출처 메타데이터상 2026년 11월 10일 23:46경(KST)에 Nodit Solana RPC에서 수집했습니다.
+
+| 시나리오 | fixtureId | 저장된 거래 / 전송 | 분석·정책 결과 |
+| --- | --- | --- | --- |
+| 정상 지갑 | `mainnet-normal-wallet` | 8 / 8 | LOW·0점 → ALLOW |
+| OFAC SDN 주소 직접 일치 | `mainnet-ofac-sdn-exact` | 5 / 0 | HIGH·100점 → BLOCK |
+| 활동량 많은 지갑·거래 한도 도달 | `mainnet-busy-wallet-partial` | 20 / 20 | PARTIAL·점수 null → REVIEW |
+| 급속 분산 송금 | `mainnet-rapid-fan-out` | 15 / 20 | MEDIUM·35점 → WARN |
+
+표의 정책 결과는 정상 메인넷 지갑을 송신자로 사용하고 정책 `1.0.0`으로 실행한 기준입니다. 각 디렉터리에는 원본 RPC 기록, 정규화 Snapshot, 수집 요청, 거래 목록과 출처 정보가 있습니다. 전송이 없는 거래도 있으므로 거래 수와 전송 수는 다를 수 있습니다.
+
+다른 데이터와 실행 모드는 다음과 같이 구분합니다.
+
+| 구분 | 위치·방식 | 용도 |
+| --- | --- | --- |
+| 실제 메인넷 수집본 | `services/collector/fixtures/mainnet-*` | Backend에서 저장된 온체인 기록 재분석 |
+| 공통 합성 시나리오 13종 | `contracts/fixtures` | 제재 일치·직접 거래·반복 송금·부분 수집 등의 계약 검증 |
+| FE 합성 데모 3종 | `apps/frontend/demo/fixtures` | 브라우저 Mock 시연 또는 별도 데모 데이터 연결 |
+| LIVE | Collector의 Solana RPC 호출 | 지정 주소·기간의 온디맨드 수집 |
+
+**Mock 모드**는 브라우저의 MSW가 저장된 합성 응답을 반환하며 엔진을 실행하지 않습니다. 실제 메인넷 시나리오는 Backend 모드에서만 제공합니다. 기본 Compose에서는 FE 전용 데모 시나리오를 숨깁니다.
+
+## 시스템 구성
+
+```text
+Frontend (:5173)
+    │ Public API /api/v1/*
+    ▼
+Backend (:8080)
+    ├─ Collector     (:8000) ── 저장된 Fixture 또는 Solana RPC
+    ├─ KYT Engine    (:8001) ── Snapshot의 위험 신호 평가
+    ├─ Policy Engine (:8002) ── 송신자·수신자 평가와 거래 의도로 정책 결정
+    ├─ Mock Gateway  (:8003) ── 제출 경로의 정책 집행 실험
+    └─ Constellation (:8004) ── 초안 모델과 단일 리더 모델 비교 실험
 ```
 
-### 운영 환경
+| 모듈 | 구현 | 상세 안내 |
+| --- | --- | --- |
+| Frontend | React·TypeScript·Vite, AJV 계약 검증, IndexedDB 케이스 저장 | [apps/frontend](apps/frontend/README.md) |
+| Backend / Orchestrator | Java 17·Spring Boot, 비동기 분석·심사·실험 API | [apps/backend](apps/backend/README.md) |
+| Collector | Python, LIVE/FIXTURE 수집·정규화·OFAC 레이블 로드 | [services/collector](services/collector/README.md) |
+| KYT Detection Engine | Python, 외부 RPC·DB 호출 없이 Snapshot 평가 | [services/kyt-engine](services/kyt-engine/README.md) |
+| Compliance Policy Engine | Python, 탐지 결과를 정책 결정으로 변환 | [services/policy-engine](services/policy-engine/README.md) |
+| Mock Gateway | Java·Spring Boot, 정책 적용·미적용 경로 재현 | [simulations/gateway](simulations/gateway/README.md) |
+| Constellation Simulator | Java·Spring Boot, 버전별 실험 모델 | [simulations/constellation](simulations/constellation/README.md) |
+
+KYT는 제재 주소 직접 일치, 제재 주소와의 직접 거래, 급속 분산 송금과 반복 송금을 탐지합니다. Policy는 `ALLOW / WARN / REVIEW / BLOCK`을 반환합니다. 수집이 PARTIAL이면 종합 위험 점수·등급은 null이며, 확인된 근거는 보존합니다. LOW·0점도 안전성이나 적법성을 보증하지 않습니다.
+
+Java 세 모듈과 초기 빌드·실행 도구는 [baypeline/be](https://github.com/baypeline/be)의 `f469cd1c46640d4870f14f7490088dac589e1c0d` 커밋에서 가져왔습니다.
+
+## 개발·운영 Compose
+
+`compose.dev.yaml`과 `compose.prod.yaml`은 각각 7개 서비스의 설정을 포함하는 독립 파일입니다. 공통 Compose 파일을 추가로 지정하지 않습니다. 기본 호스트 포트가 겹치므로 개발·운영 환경은 하나씩 실행합니다.
+
+| 항목 | 개발 | 운영 |
+| --- | --- | --- |
+| FE | Vite 개발 서버·소스 마운트·HMR | 정적 빌드·Nginx |
+| Java | 컨테이너의 JDK·Maven으로 실행 | 빌드 단계에서 테스트·패키징 후 JRE로 실행 |
+| Python | editable 설치·소스 마운트 | 일반 설치·소스 마운트 없음 |
+| 호스트 포트 | 루프백의 5173, 8080, 8000~8004 | 기본 루프백의 5173, 8080 |
+| Constellation 화면용 mock 버전 | 활성화 | 비활성화 |
+| 실행 파일시스템 | 개발용 쓰기 영역 사용 | 일반 사용자·읽기 전용, `/tmp` 임시 영역 |
+
+두 환경 모두 FE의 `/api`를 내부 Backend로 프록시합니다. Backend는 내부 서비스가 정상 상태가 된 뒤 시작하고, FE는 Backend가 정상 상태가 된 뒤 시작합니다.
+
+개발 중 FE 소스 변경은 HMR로 반영됩니다. Python·Java 소스 변경은 해당 서비스를 재시작합니다. 의존성·POM·Dockerfile 또는 FE 빌드 시 읽는 데이터 목록을 변경하면 `up --build -d`로 다시 빌드합니다.
+
+### LIVE 데이터 수집 설정
+
+개발 환경에서는 `.env.example`을 `.env`로 복사하고 `SOLANA_RPC_URL`, `SOLANA_RPC_API_KEY`, `SOLANA_RPC_PROVIDER`를 설정합니다. 기존 `.env`가 있으면 덮어쓰지 않고 필요한 항목을 수정합니다.
 
 ```bash
+# 처음 설정할 때만 실행
+cp .env.example .env
+# RPC 설정을 편집한 뒤 재기동
+docker compose -f compose.dev.yaml up -d collector
+```
+
+이후 FE의 **Live on-chain**에서 실제 주소, 조회 기간과 거래 상한을 입력합니다. 수집은 분석 요청 시점에만 실행하며, 주소를 지속 감시하거나 자동으로 데이터를 누적하지 않습니다. 제공자의 이력 보관 기간·조회 한도·수집 시간 예산에 따라 PARTIAL이 될 수 있습니다.
+
+### 운영 구성 실행
+
+```bash
+# 처음 설정할 때만 실행. 기존 파일이 있으면 필요한 값만 수정
 cp .env.prod.example .env.prod
-# .env.prod의 CORS_ALLOWED_ORIGINS와 SOLANA_RPC_* 값을 실제 환경에 맞게 수정
+# 포트·바인딩·RPC·CORS 설정을 편집한 뒤 실행
 docker compose --env-file .env.prod -f compose.prod.yaml up --build -d --wait
-docker compose --env-file .env.prod -f compose.prod.yaml logs -f backend
-# 종료
-docker compose --env-file .env.prod -f compose.prod.yaml down
 ```
 
-운영 이미지는 Java 테스트와 패키징을 Docker 안에서 수행한 뒤 JRE만 포함하는 실행 이미지를 생성합니다. Python도 일반 설치를 사용하며, 소스 마운트 없이 일반 사용자와 읽기 전용 파일시스템으로 실행합니다. 서비스는 비정상 종료 시 자동으로 재시작합니다.
+`FRONTEND_PORT`와 `BACKEND_PORT`의 기본값은 5173과 8080입니다. 외부 접근이 필요하면 `FRONTEND_BIND_ADDRESS`를 조정합니다. Collector는 기본적으로 Compose 내부의 `http://collector:8000`을 사용하며, 외부 Collector를 사용할 때만 `COLLECTOR_URL`을 바꿉니다.
 
-운영에서는 Constellation mock 버전을 비활성화합니다. Collector는 compose 서비스로 실행되며 `COLLECTOR_URL`의 기본값(`http://collector:8000`)을 그대로 사용합니다. 외부 Collector를 쓸 때만 `.env.prod`에서 `COLLECTOR_URL`을 바꿉니다. LIVE 수집에는 `.env.prod`의 `SOLANA_RPC_URL`과 `SOLANA_RPC_API_KEY`가 필요합니다. 운영 Collector는 호스트 포트를 노출하지 않습니다.
+`VITE_CONSTELLATION_MODELS`는 FE 빌드 설정이므로 변경 후 FE를 다시 빌드해야 합니다. 나머지 주요 Collector 설정과 데이터 공급자 제약은 [Collector README](services/collector/README.md)에 정리했습니다. 실제 API 키는 `.env` 또는 `.env.prod`에만 두고 커밋하지 않습니다.
 
-운영 Frontend는 Nginx가 정적 빌드를 제공하며 기본 접속 주소는 `http://localhost:5173`입니다. `/api`는 내부 Backend로 프록시하고 SPA 경로의 직접 접속도 지원합니다. Node.js는 빌드 단계에서만 사용합니다.
+## API와 공통 계약
 
-호스트에 노출하는 포트는 Frontend(`127.0.0.1:5173`)와 Backend(`127.0.0.1:8080`)입니다. `.env.prod`의 `FRONTEND_PORT`, `FRONTEND_BIND_ADDRESS`, `BACKEND_PORT`, `BACKEND_BIND_ADDRESS`로 변경할 수 있습니다. 직접 외부에 FE를 노출한다면 `FRONTEND_BIND_ADDRESS=0.0.0.0`을 지정합니다. 내부 모듈은 Compose 네트워크의 서비스 이름으로 연결하며, Backend는 내부 모듈의 `/health`가 정상인 뒤 시작합니다. 개발 환경과 운영 환경은 같은 호스트 포트를 사용하므로 하나씩 실행합니다.
+공통 기준은 [contracts/README.md](contracts/README.md), HTTP 명세는 [contracts/openapi.yaml](contracts/openapi.yaml), 구조 밖의 의미 제약은 [contracts/semantics.md](contracts/semantics.md)에 있습니다. 계약 버전은 `0.1.0`이며 규칙·정책·모델 버전은 별도로 관리합니다.
 
-두 Compose 모두 `frontend` 서비스를 포함합니다. `VITE_CONSTELLATION_MODELS`는 Simulator의 등록 버전과 맞추며, 운영 FE의 빌드 설정을 변경하면 `docker compose --env-file .env.prod -f compose.prod.yaml up --build -d frontend`로 다시 빌드합니다. 개발 FE도 의존성 변경 시 이미지를 다시 빌드합니다.
+| Public API | 역할 |
+| --- | --- |
+| `POST /api/v1/analyses` | 분석 접수. 202와 조회용 `Location` 반환 |
+| `GET /api/v1/analyses/{id}` | QUEUED → RUNNING → COMPLETED / PARTIAL / FAILED 조회 |
+| `GET /api/v1/analyses/{id}/transfers` | 전송 목록 조회. 기본 limit 100, 최대 1000 |
+| `POST /api/v1/compliance/evaluate` | 저장된 두 분석과 거래 의도로 정책 심사 |
+| `POST /api/v1/experiments/gateway` | 저장된 심사 결과로 제출 경로 실험 |
+| `POST /api/v1/experiments/constellation` | 저장된 심사 결과를 참조해 프로토콜 모델 실험 |
 
-운영 구성에서도 분석·심사 기록은 메모리에 저장되어 재시작 시 사라집니다. Constellation 초안 모델의 리서치 승인 상태는 실행 환경과 무관합니다.
-
-## Python 엔진 설치와 실행
-
-Python 3.11 이상이 필요합니다. 저장소 루트에서 실행합니다.
-
-```powershell
-python -m venv .venv
-& .venv/Scripts/python.exe -m pip install -e '.[test]'
-
-# 각각 별도 터미널에서 실행
-& .venv/Scripts/python.exe -m collector --port 8000
-& .venv/Scripts/python.exe -m kyt_engine --port 8001
-& .venv/Scripts/python.exe -m policy_engine --port 8002
-```
-
-macOS/Linux에서는 `.venv/Scripts/python.exe`를 `.venv/bin/python`으로 바꿉니다. 각 서버는 기본적으로 127.0.0.1에 바인딩합니다. 같은 설치 안에 있지만 별도 프로세스에서 실행하며 서로를 호출하거나 import하지 않습니다.
-
-## 백엔드·시뮬레이터 설치와 실행
-
-JDK 17 이상이 필요합니다. Java 모듈은 Spring Boot 3.5 기반이며, Maven은 루트의 Wrapper가 다운로드합니다. 모든 명령은 이 워크스페이스 루트에서 실행합니다.
-
-```bash
-# 모듈별로 별도 터미널에서 실행
-./mvnw -pl apps/backend spring-boot:run
-./mvnw -pl simulations/gateway spring-boot:run
-./mvnw -pl simulations/constellation spring-boot:run
-```
-
-Windows PowerShell에서는 `./mvnw` 대신 `.\mvnw.cmd`를 사용합니다. Java 서버도 기본적으로 `127.0.0.1`에 바인딩합니다.
-
-### 로컬 통합 실행 (macOS/Linux)
-
-위 Python 엔진 설치를 마친 뒤 실행합니다. 별도 저장소를 클론할 필요 없이 현재 워크스페이스의 엔진과 공통 계약을 사용합니다.
-
-```bash
-scripts/run-local.sh start    # 빌드 후 Collector·KYT·Policy·Gateway·Constellation·Backend 기동
-scripts/run-local.sh status   # /health 확인
-scripts/run-local.sh stop     # 전체 종료
-```
-
-로그는 `.run/logs/`에 남습니다. Python 엔진은 현재 워크스페이스의 `.venv/bin/python`으로 실행하며, `LAB_DIR`로 다른 엔진·계약 경로를 지정할 수 있습니다.
-
-로컬 통합 실행은 Collector(8000)를 함께 시작하고 Backend가 이를 호출합니다(`LOCAL_COLLECTOR_ENABLED=false`가 기본값). FIXTURE 모드는 `services/collector/fixtures`의 실제 메인넷 기록과 `contracts/fixtures`의 합성 데이터를 사용합니다. LIVE 모드를 쓰려면 `SOLANA_RPC_URL`(필요하면 `SOLANA_RPC_API_KEY`, `SOLANA_RPC_PROVIDER`)을 환경 변수로 지정한 뒤 `scripts/run-local.sh start`를 실행합니다. `LOCAL_COLLECTOR_ENABLED=true`로 실행하면 Collector 대신 `contracts/fixtures`의 합성 스냅샷을 Backend가 직접 읽습니다(화면 확인용).
-
-## 파일 입력으로 실행
-
-```powershell
-& .venv/Scripts/python.exe -m collector --input contracts/fixtures/normal/collection-request.json
-& .venv/Scripts/python.exe -m kyt_engine --input contracts/fixtures/sanctioned/evaluation-request.json
-& .venv/Scripts/python.exe -m policy_engine --input contracts/fixtures/sanctioned/policy-request.json
-& .venv/Scripts/python.exe scripts/demo_engines.py --scenario sanctioned
-& .venv/Scripts/python.exe scripts/demo_engines.py --scenario direct-flow --policy-version 1.1.0
-```
-
-데모는 실제 엔진을 순서대로 실행하여 평가·정책 결정과 계약 검증을 통과한 Gateway 요청을 출력합니다. Gateway 자체를 실행하거나 전송을 수행하지 않습니다. `contracts/fixtures`의 Fixture는 합성 데이터입니다. `services/collector/fixtures`의 `mainnet-*` Fixture는 실제 메인넷 수집 기록이며, 위험 신호는 법적 판단이 아닙니다.
+FE는 Public API만 사용합니다. Backend는 저장된 원본 평가·결정을 내부 요청에 사용하며, 브라우저에서 임의로 만든 정책 결정을 받지 않습니다. 계약의 오류 형식은 `{error: {code, message, retryable}, requestId}`이며 요청 추적에는 `X-Request-ID`를 사용합니다.
 
 ## 검증
 
-```powershell
-& .venv/Scripts/python.exe contracts/validate.py
-& .venv/Scripts/python.exe -m pytest -q
-# 모듈별 독립 테스트
-& .venv/Scripts/python.exe -m pytest tests/kyt -q
-& .venv/Scripts/python.exe -m pytest tests/policy -q
-& .venv/Scripts/python.exe -m pytest tests/collector -q
-```
-
-Java 모듈의 단위·API 테스트와 전체 흐름 검증은 다음 명령을 사용합니다.
+개발 Compose가 실행 중인 상태에서 실행합니다.
 
 ```bash
-./mvnw test
-# scripts/run-local.sh start로 서비스를 실행한 상태에서 수행
-.venv/bin/python scripts/e2e_smoke.py
+# FE 테스트·린트
+docker compose -f compose.dev.yaml exec -T frontend pnpm test --maxWorkers=2
+docker compose -f compose.dev.yaml exec -T frontend pnpm lint
+
+# Collector·KYT·Policy 테스트 및 공통 계약 검증
+docker compose -f compose.dev.yaml exec -T kyt-engine python -m pytest -q -p no:cacheprovider
+docker compose -f compose.dev.yaml exec -T kyt-engine python contracts/validate.py
+
+# Java 세 모듈 테스트
+docker compose -f compose.dev.yaml run --rm --no-deps backend mvn -B -ntp test
+
+# Backend를 대상으로 전체 API 흐름 검증
+docker compose -f compose.dev.yaml exec -T -e BACKEND_URL=http://backend:8080 kyt-engine python scripts/e2e_smoke.py /app
+
+# 두 독립 Compose 설정 검증
+docker compose -f compose.dev.yaml config --quiet
+docker compose --env-file .env.prod -f compose.prod.yaml config --quiet
 ```
 
-`e2e_smoke.py`는 분석 → 거래 목록 → 정책 심사 → Gateway 결정 표 → Constellation → 오류 응답을 호출하고, 응답을 `contracts/runtime.py`의 JSON Schema로 검증합니다.
+메인넷 연결은 FE 테스트에서 요청 스키마·저장 구간·출처 표시·Mock 제외를 확인하고, 실제 서비스 호출로 네 수집본의 분석·정책 결과를 검증했습니다. 테스트 통과가 모든 계약 경계의 검증 완료를 의미하지는 않습니다.
 
-공통 스키마·HTTP API는 [contracts/README.md](contracts/README.md), 개별 실행법은 [Collector](services/collector/README.md), [KYT](services/kyt-engine/README.md), [Policy](services/policy-engine/README.md), [Backend](apps/backend/README.md), [Gateway](simulations/gateway/README.md), [Constellation](simulations/constellation/README.md)을 참고합니다. 위험 신호와 LOW 등급은 실제 불법성·적법성·안전성을 보증하지 않습니다. Constellation의 초안 모델은 구현되어 있지만 규칙과 임계값은 리서치팀 공식 확정 전입니다.
+## Docker 없이 실행
 
-## Backend 호출 예시
-
+Python 3.11 이상, JDK 17 이상, FE 실행용 Node.js와 pnpm이 필요합니다. Java의 Maven은 루트 Wrapper가 내려받습니다.
 
 ```bash
-# 1) 송신자·수신자 분석 (fixture 주소와 fixtureId가 일치해야 함)
-curl -s -X POST localhost:8080/api/v1/analyses -H 'Content-Type: application/json' -d '{
-  "address":"4vJ9JU1bJJE96FWSJKvHsmmFADCg4gpZQff4P3bkLKi","network":"mainnet-beta",
-  "mode":"FIXTURE","fixtureId":"sender",
-  "scope":{"fromTime":"2026-11-01T00:00:00Z","toTime":"2026-11-02T00:00:00Z","maxTransactions":100}}'
-# → 202 {"analysisId":"analysis-...","status":"QUEUED"}  (recipient는 address 8qbHbw2…, fixtureId "sanctioned")
+python3 -m venv .venv
+.venv/bin/python -m pip install -e '.[test]'
+scripts/run-local.sh start
 
-# 2) 상태·결과 조회, 거래 목록
-curl -s localhost:8080/api/v1/analyses/{analysisId}
-curl -s "localhost:8080/api/v1/analyses/{analysisId}/transfers?limit=100"
-
-# 3) 거래 전 정책 심사 → decision.decisionId 획득
-curl -s -X POST localhost:8080/api/v1/compliance/evaluate -H 'Content-Type: application/json' -d '{
-  "intent":{"intentId":"demo-intent","network":"mainnet-beta",
-    "sender":"4vJ9JU1bJJE96FWSJKvHsmmFADCg4gpZQff4P3bkLKi",
-    "recipient":"8qbHbw2BbbTHBW1sbeqakYXVKRQM8Ne7pLK7m6CVfeR",
-    "asset":{"type":"SOL","mint":null,"decimals":9},"amountRaw":"1000000000",
-    "requestedAt":"2026-11-02T00:00:00Z"},
-  "senderAnalysisId":"{sender}","recipientAnalysisId":"{recipient}","policyVersion":"1.0.0"}'
-
-# 4) Gateway 실험 — 같은 결정을 정책 적용 / 미적용 경로로 비교
-curl -s -X POST localhost:8080/api/v1/experiments/gateway -H 'Content-Type: application/json' -d '{
-  "intentId":"demo-intent","decisionId":"{decisionId}",
-  "route":{"routeId":"enforced","policyEnforced":true,"warningAcknowledged":false}}'
+# 별도 터미널에서 FE 실행
+cd apps/frontend
+pnpm install --frozen-lockfile
+pnpm dev:backend
 ```
 
-## Public API (Backend)
+스크립트는 Collector·KYT·Policy·Gateway·Constellation·Backend를 기동하며 로그는 `.run/logs/`에 남습니다. `scripts/run-local.sh status`와 `stop`으로 확인·종료합니다. 실제 Collector 대신 Backend의 합성 Snapshot 대체 구현을 쓰는 `LOCAL_COLLECTOR_ENABLED=true`에서는 메인넷 수집본을 사용할 수 없습니다.
 
-| Method | Endpoint | 설명 |
-| --- | --- | --- |
-| POST | `/api/v1/analyses` | 분석 시작 → 202 + `Location`. Collector → Snapshot 저장 → KYT → 평가 저장을 비동기로 실행 |
-| GET | `/api/v1/analyses/{id}` | `QUEUED → RUNNING → COMPLETED / PARTIAL / FAILED`. FAILED도 200, 없는 ID는 404 |
-| GET | `/api/v1/analyses/{id}/transfers` | `limit` 기본 100·최대 1000, 불투명 `cursor`. Snapshot 공개 전이면 409 `ANALYSIS_NOT_READY` |
-| POST | `/api/v1/compliance/evaluate` | 저장된 두 분석으로 Policy Engine 호출. 미완료 409, 주소 불일치 409 `ASSESSMENT_MISMATCH` |
-| POST | `/api/v1/experiments/gateway` | 저장된 심사 기록의 intent·decision으로 Gateway 호출. 없는 결정 404 |
-| POST | `/api/v1/experiments/constellation` | 저장된 심사 기록 기준으로 Simulator 호출. 미승인 모델 422 |
+엔진을 개별 프로세스 또는 파일 입력으로 실행할 수도 있습니다.
 
-모든 실패는 `{error: {code, message, retryable}, requestId}` 형식이며, 모든 응답에 `X-Request-ID`가 붙습니다.
-클라이언트가 보낸 `X-Request-ID`가 있으면 그 값을 쓰고 내부 모듈에도 그대로 전달합니다.
+```bash
+# 서버 명령은 각각 별도 터미널에서 실행
+.venv/bin/python -m collector --port 8000
+.venv/bin/python -m kyt_engine --port 8001
+.venv/bin/python -m policy_engine --port 8002
+./mvnw -pl apps/backend spring-boot:run
+./mvnw -pl simulations/gateway spring-boot:run
+./mvnw -pl simulations/constellation spring-boot:run
 
-## 설계 메모
+# 서버 없이 파일로 실행
+.venv/bin/python -m collector --input services/collector/fixtures/mainnet-normal-wallet/collection-request.json
+.venv/bin/python -m kyt_engine --input contracts/fixtures/sanctioned/evaluation-request.json
+.venv/bin/python -m policy_engine --input contracts/fixtures/sanctioned/policy-request.json
+.venv/bin/python scripts/demo_engines.py --scenario direct-flow --policy-version 1.1.0
+```
 
-- **책임 제한**: Backend는 위험도나 정책 결과를 계산하지 않고, Collector의 정규화 로직도 반복하지 않습니다.
-  대신 내부 모듈 응답의 연결 관계를 확인한 뒤에만 저장·노출합니다(무검증 전달 금지).
-  예를 들어 Snapshot의 주소·requestId·mode, 평가의 snapshotId·rulesetVersion, coverage와 점수 형태(PARTIAL → null)를 확인합니다.
-- **브라우저 입력 불신**: Gateway·Constellation 요청은 `intentId`와 `decisionId`만 받습니다.
-  원본 intent와 decision은 Backend에 저장된 심사 기록에서 가져옵니다.
-- **Mock Gateway**: `contracts/semantics.md`의 결정 표를 그대로 구현했습니다.
-  정책 미적용 경로는 action과 무관하게 `SUBMISSION_ALLOWED / POLICY_NOT_ENFORCED`를 반환해 우회 조건을 비교할 수 있습니다.
-  `actualBroadcast`는 항상 `false`입니다.
-- **Constellation Simulator**: 판정 모델을 버전으로 구분해 등록합니다. 요청의 `protocolModelVersion`으로 모델을 고릅니다.
-  - `0.1.0-draft`: Constellation 규칙 초안입니다. 판정 순서는 제안자 경로 → pslice 가용성 → 증명 조건 → 리더 제외입니다.
-    증명 비율이 임계값(기본 66.67%) 이상이면 포함이 강제되고, 이때 리더의 제외 시도는 무효입니다.
-  - `0.1.0-single-leader`: 비교 기준인 기존 단일 리더 모델입니다. 포함 강제 장치가 없어서 리더의 제외가 항상 유효합니다.
-  - 같은 시나리오를 두 버전으로 각각 호출해 통제 조건을 비교합니다. 같은 입력이면 항상 같은 결과가 나옵니다.
-  - 정의상 모순(거절 수 > 전체, 수락 제안자가 없는데 수락 제안자에게 제출)은 모델과 무관하게 `INVALID_SCENARIO`로 응답합니다.
-  - **주의**: `0.1.0-draft`의 규칙과 임계값은 팀 초안이며 리서치팀 공식 확정 전입니다.
-    확정되면 `CONSTELLATION_ATTESTATION_THRESHOLD`나 새 `ProtocolModel` 버전으로 반영합니다.
-    `contracts/config/protocol-models.json`(공통 계약)은 수정하지 않았습니다.
-- **결정적 ID**: `experimentId`와 `simulationId`는 정렬된 의미 데이터의 SHA-256입니다(`contracts/runtime.py`의 `stable_id`와 같은 방식).
-  같은 입력이면 requestId와 무관하게 같은 ID가 나옵니다.
-- **저장소**: PoC라서 메모리 저장소(`AnalysisRepository`, `ReviewRepository`)를 씁니다. 재시작하면 기록이 사라집니다.
-- **모듈 독립성**: Java 세 모듈은 독립적으로 실행·검증할 수 있도록 공통 지원 코드(`support/`)를 각자 가지고 있습니다.
-  테스트 리소스의 `fixtures/`는 `contracts/fixtures`에서 복사한 합성 데이터입니다.
+Windows PowerShell에서는 Python 실행 경로를 `.venv/Scripts/python.exe`로 바꾸고 앞에 `&`를 붙입니다. Maven은 `.\mvnw.cmd`를 사용합니다. 통합 실행용 셸 스크립트는 macOS/Linux용이며, 개별 실행법은 각 모듈 README를 참고합니다.
 
-## 주요 설정 (환경 변수)
+## 데이터 보관과 현재 한계
 
-| 변수 | 기본값 | 설명 |
-| --- | --- | --- |
-| `BACKEND_PORT` / `GATEWAY_PORT` / `CONSTELLATION_PORT` | 8080 / 8003 / 8004 | 서버 포트 (기본 바인딩 127.0.0.1) |
-| `COLLECTOR_URL` `KYT_URL` `POLICY_URL` `GATEWAY_URL` `CONSTELLATION_URL` | `http://127.0.0.1:8000~8004` (Compose는 `http://collector:8000` 등) | 내부 모듈 주소 |
-| `SOLANA_RPC_URL` / `SOLANA_RPC_API_KEY` / `SOLANA_RPC_PROVIDER` | 없음 / 없음 / `SOLANA_RPC` | Collector LIVE 모드의 RPC 주소, API 키(헤더로만 전송), 제공자 이름. 키는 `.env`에만 두고 커밋하지 않음 |
-| `COLLECTOR_MAX_TRANSACTIONS` / `COLLECTOR_LABEL_DATASET` | `1000` / `services/collector/data/labels/ofac-sdn.json` | Collector의 거래 수 상한과 OFAC 라벨 데이터셋 경로 |
-| `COLLECTOR_TIME_BUDGET_SECONDS` / `COLLECTOR_FETCH_WORKERS` / `COLLECTOR_MAX_TOKEN_ACCOUNTS` / `COLLECTOR_MAX_DISCOVERY_TRANSACTIONS` | `20` / `16` / `100` / `1000` | LIVE 수집 시간 예산(Backend 읽기 제한 30초보다 작게), 동시 조회 수, 함께 조회할 토큰 계정 상한, 닫힌 토큰 계정 탐색에 읽을 지갑 거래 상한. 전체 목록은 [Collector README](services/collector/README.md) |
-| `DEFAULT_RULESET_VERSION` | `1.0.0` | 요청에 rulesetVersion이 없을 때 사용 |
-| `LOCAL_COLLECTOR_ENABLED` / `LOCAL_COLLECTOR_FIXTURES_DIR` | `false` / `contracts/fixtures` | `true`면 Collector 대신 fixture 디렉터리를 직접 읽음 (화면 확인용) |
-| `CONSTELLATION_ATTESTATION_THRESHOLD` | `66.67` | 초안 모델의 포함 강제 증명 임계값(%, 이상) |
-| `CONSTELLATION_MOCK_ENABLED` | `false` | mock 버전 응답 허용 (run-local.sh는 true) |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Frontend 출처 |
+- Backend의 분석·심사 기록은 메모리에 저장합니다. 재시작하면 사라지며, 지속 수집·운영 DB 적재는 구현되어 있지 않습니다. FE 케이스는 브라우저 IndexedDB에 저장하며 내보내기·가져오기를 지원합니다.
+- 저장된 메인넷 수집본은 특정 시점의 기록입니다. 현재 지갑 상태나 평가의 신선도를 보장하지 않습니다. 실제 데이터와 합성 데이터, OFAC 레이블과 테스트 레이블은 별도로 표시합니다.
+- Backend는 내부 응답의 연결 관계와 일부 구조를 검사하지만 전체 스키마 검증에는 누락이 있습니다. 잘못된 KYT 점수나 필수 필드가 빠진 Gateway 결과를 공개 API로 통과시키는 경우가 확인되었으며 보완이 필요합니다. FE는 응답 스키마 위반을 감지하면 결과 표시를 중단합니다.
+- Constellation의 `0.1.0-draft`와 `0.1.0-single-leader`는 실험용 구현입니다. 공통 계약의 승인 모델 목록은 아직 비어 있지만 구현에서는 두 모델이 기본 활성화되어 있어 승인·버전 정책을 맞추는 작업이 남아 있습니다. 운영 구성도 리서치 승인이나 실제 프로토콜 검증을 뜻하지 않습니다.
+- Gateway는 제출 경로를 모의 실행하며 `actualBroadcast`는 항상 false입니다. ALLOW나 모의 제출 허용은 실제 송금·거래 포함·안전성을 보장하지 않습니다.

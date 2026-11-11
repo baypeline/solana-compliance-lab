@@ -4,6 +4,7 @@ WORKDIR /workspace/apps/frontend
 COPY apps/frontend/package.json apps/frontend/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY contracts /workspace/contracts
+COPY services/collector/fixtures /workspace/services/collector/fixtures
 COPY apps/frontend ./
 EXPOSE 5173
 CMD ["pnpm", "dev:backend", "--host", "0.0.0.0"]

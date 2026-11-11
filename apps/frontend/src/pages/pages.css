@@ -294,6 +294,11 @@
 .scenario:hover {
   background: var(--fill-2);
 }
+.scenario-copy {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
 .scenario.on {
   border-color: var(--accent);
 }

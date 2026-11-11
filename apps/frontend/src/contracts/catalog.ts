@@ -1,12 +1,21 @@
-// contracts/ 아래의 Fixture·정책·규칙·모델 목록을 빌드 시점에 읽는다. 화면 선택지를 하드코딩하지 않기 위함이다.
-import type { AnalysisRequest, ConstellationScenario } from '../api/types'
+// 공통 계약, FE 데모 및 Collector 수집본의 메타데이터로 화면 선택지를 구성한다.
+import type { AnalysisRequest, ConstellationScenario, DataProvenance } from '../api/types'
 
-// Two sources of FIXTURE scenarios: the shared contract fixtures (one rule each, 0–3 transfers) and the frontend's own
-// demo scenarios in apps/frontend/demo/fixtures (a day of activity each; results recorded from the real engines).
+// Synthetic scenarios come from the shared contract and the frontend's demo fixtures.
 const analysisRequests = {
   ...import.meta.glob<AnalysisRequest>('@contracts/fixtures/*/analysis-request.json', { eager: true, import: 'default' }),
   ...import.meta.glob<AnalysisRequest>('../../demo/fixtures/*/analysis-request.json', { eager: true, import: 'default' }),
 }
+// Read only the request and provenance metadata. Raw RPC recordings stay out of the FE bundle.
+const mainnetRequests = import.meta.glob<AnalysisRequest>(
+  '../../../../services/collector/fixtures/*/collection-request.json', { eager: true, import: 'default' },
+)
+const mainnetProvenance = import.meta.glob<DataProvenance>(
+  '../../../../services/collector/fixtures/*/snapshot.json', { eager: true, import: 'dataProvenance' },
+)
+const mainnetCapturedAt = import.meta.glob<string>(
+  '../../../../services/collector/fixtures/*/source.json', { eager: true, import: 'capturedAt' },
+)
 const policies = import.meta.glob<{ version: string }>('@contracts/config/policies/*.json', {
   eager: true,
   import: 'default',
@@ -55,6 +64,8 @@ export interface ProtocolModels {
 export interface FixtureScenario {
   fixtureId: string
   request: AnalysisRequest
+  provenance: DataProvenance
+  capturedAt?: string
 }
 
 function compareSemver(a: string, b: string): number {
@@ -68,11 +79,26 @@ function compareSemver(a: string, b: string): number {
 
 /** Demo scenarios, in the order they are offered. */
 export const demoScenarioIds = ['demo-layering', 'demo-burst', 'demo-busy-clean']
-const rank = (id: string) => (id === 'sender' ? 0 : demoScenarioIds.includes(id) ? 1 + demoScenarioIds.indexOf(id) : 100)
+const rank = (id: string) => (id === 'sender' ? 0 : demoScenarioIds.includes(id) ? 1 + demoScenarioIds.indexOf(id) : id === 'mainnet-normal-wallet' ? 10 : id.startsWith('mainnet-') ? 20 : 100)
 
-/** FIXTURE 모드에서 고를 수 있는 시나리오. 공통 송신자(sender), 데모 시나리오, 계약 fixture 순서다. */
-export const fixtureScenarios: FixtureScenario[] = Object.entries(analysisRequests)
-  .map(([path, request]) => ({ fixtureId: path.split('/').at(-2) ?? path, request }))
+/** 공통 송신자, 데모, 메인넷 수집본, 나머지 계약 fixture 순서로 제공한다. */
+export const fixtureScenarios: FixtureScenario[] = [
+  ...Object.entries(analysisRequests).map(([path, request]) => ({
+    fixtureId: path.split('/').at(-2) ?? path,
+    request,
+    provenance: { dataType: 'SYNTHETIC' as const, source: path.includes('/demo/') ? 'apps/frontend/demo/fixtures' : 'contracts/fixtures', reference: null },
+  })),
+  ...Object.entries(mainnetRequests).map(([path, collection]) => {
+    // Internal collection requests contain requestId; the Public AnalysisRequest must not.
+    const { address, network, mode, fixtureId, scope } = collection
+    return {
+      fixtureId: path.split('/').at(-2) ?? path,
+      request: { address, network, mode, fixtureId, scope },
+      provenance: mainnetProvenance[path.replace('collection-request.json', 'snapshot.json')],
+      capturedAt: mainnetCapturedAt[path.replace('collection-request.json', 'source.json')],
+    }
+  }),
+]
   .filter((s) => s.request.fixtureId === s.fixtureId)
   .sort((a, b) => rank(a.fixtureId) - rank(b.fixtureId) || a.fixtureId.localeCompare(b.fixtureId))
 
@@ -92,6 +118,11 @@ export const protocolModels: ProtocolModels = Object.values(protocolModelFiles)[
 
 export function findScenario(fixtureId: string): FixtureScenario | undefined {
   return fixtureScenarios.find((s) => s.fixtureId === fixtureId)
+}
+
+/** Real recordings are paired with the recorded normal wallet; synthetic scenarios keep their common sender. */
+export function scenarioSender(fixtureId: string): string {
+  return findScenario(fixtureId)?.provenance.dataType === 'ON_CHAIN' ? 'mainnet-normal-wallet' : 'sender'
 }
 
 /** Constellation 입력 기본값: contracts/fixtures/constellation/public-request.json의 시나리오 */
