@@ -43,10 +43,10 @@ export function CasePage({ runOptions }: { runOptions?: Partial<RunCaseOptions> 
     // each write starts from the stored case, not from the copy this click saw (a simulation may save meanwhile)
     const upsert = (r: CaseRun) => update(base.id, (c) => ({ ...c, runs: [...c.runs.filter((x) => x.runId !== r.runId), r] }))
     try {
-      const final = await runCase(api, base.input, (_p, r) => void upsert(r), { apiMode: currentApiMode(), ...runOptions })
+      const final = await runCase(api, base.input, (_p, r) => void upsert(r).catch(() => {}), { apiMode: currentApiMode(), ...runOptions })
       await upsert(final)
       setSelectedId(final.runId)
-    } finally {
+    } catch { /* The shared storage notice offers retry without losing the snapshot. */ } finally {
       setRerunning(false)
     }
   }
@@ -73,7 +73,11 @@ export function CasePage({ runOptions }: { runOptions?: Partial<RunCaseOptions> 
           </div>
         </section>
       )}
-      {(run?.status === 'RUNNING' || rerunning) && <DitherLoader label={t('ui.case.running')} />}
+      {run?.status === 'RUNNING' && !rerunning && <section className="notice notice-warn">
+        <p>{t('ui.storage.incomplete')}</p>
+        <button type="button" className="btn" onClick={() => void rerun(record)}>{t('ui.case.rerun')}</button>
+      </section>}
+      {rerunning && <DitherLoader label={t('ui.case.running')} />}
 
       {run?.compliance && <WhyChain input={record.input} run={run} />}
       {run && <CaseDetails record={record} input={record.input} run={run} />}

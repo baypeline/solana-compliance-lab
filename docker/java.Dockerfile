@@ -3,6 +3,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /workspace
 COPY pom.xml ./
+COPY contracts/schemas contracts/schemas
+COPY contracts/fixtures contracts/fixtures
 COPY apps/backend apps/backend
 COPY simulations/gateway simulations/gateway
 COPY simulations/constellation simulations/constellation
@@ -15,7 +17,8 @@ FROM eclipse-temurin:17-jre-jammy AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 app \
-    && useradd --uid 10001 --gid app --no-create-home app
+    && useradd --uid 10001 --gid app --no-create-home app \
+    && mkdir -p /app/data && chown app:app /app/data
 WORKDIR /app
 ARG MODULE=apps/backend
 COPY --from=build /workspace/${MODULE}/target/*.jar /app/app.jar

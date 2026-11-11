@@ -115,10 +115,19 @@ def semantic_checks(value):
             snapshot_checks(node)
         if {"subjectAddress", "detectedRules", "evidences", "riskScore"} <= node.keys():
             evaluation_checks(node)
-        if {"intent", "assessments", "policyVersion"} <= node.keys():
+        if {"intent", "assessments"} <= node.keys():
             request_checks(node)
         if {"intent", "decision"} <= node.keys():
             require(node["intent"]["intentId"] == node["decision"]["intentId"], "Decision intent mismatch")
+        if {"recordId", "type", "review", "request", "result"} <= node.keys():
+            review, request, result = node["review"], node["request"], node["result"]
+            require(node["intentId"] == request["intentId"] == result["intentId"] == review["intent"]["intentId"], "Experiment intent mismatch")
+            require(node["decisionId"] == request["decisionId"] == review["decision"]["decisionId"], "Experiment decision mismatch")
+            if node["type"] == "GATEWAY":
+                require(result["routeId"] == request["route"]["routeId"], "Experiment route mismatch")
+                require(result["policyApplied"] == request["route"]["policyEnforced"], "Experiment policy flag mismatch")
+            else:
+                require(result["protocolModelVersion"] == request["protocolModelVersion"], "Experiment model mismatch")
         if {"analysisId", "evaluation", "snapshotId", "status"} <= node.keys() and node["evaluation"] is not None:
             require(node["address"] == node["evaluation"]["subjectAddress"], "Analysis address mismatch")
             require(node["snapshotId"] == node["evaluation"]["snapshotId"], "Analysis snapshot mismatch")

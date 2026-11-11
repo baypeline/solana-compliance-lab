@@ -85,7 +85,7 @@ export function NetworkTab({
         const records = kind === 'run' ? await runConstellationCompare(api, run, versions, scenario) : await runAttestationSweep(api, run, versions[0], scenario)
         if (kind === 'run') records.forEach((r) => markFresh(r.key))
         await onSave(records)
-      } finally {
+      } catch { /* CasesProvider exposes storage errors and keeps pending results. */ } finally {
         setBusy(null)
       }
     },

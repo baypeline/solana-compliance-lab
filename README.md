@@ -77,7 +77,7 @@ Backend (:8080)
 
 | 모듈 | 구현 | 상세 안내 |
 | --- | --- | --- |
-| Frontend | React·TypeScript·Vite, AJV 계약 검증, IndexedDB 케이스 저장 | [apps/frontend](apps/frontend/README.md) |
+| Frontend | React·TypeScript·Vite, AJV 계약 검증, Backend 케이스 영속 저장 | [apps/frontend](apps/frontend/README.md) |
 | Backend / Orchestrator | Java 17·Spring Boot, 비동기 분석·심사·실험 API | [apps/backend](apps/backend/README.md) |
 | Collector | Python, LIVE/FIXTURE 수집·정규화·OFAC 레이블 로드 | [services/collector](services/collector/README.md) |
 | KYT Detection Engine | Python, 외부 RPC·DB 호출 없이 Snapshot 평가 | [services/kyt-engine](services/kyt-engine/README.md) |
@@ -144,8 +144,16 @@ docker compose --env-file .env.prod -f compose.prod.yaml up --build -d --wait
 | `POST /api/v1/compliance/evaluate` | 저장된 두 분석과 거래 의도로 정책 심사 |
 | `POST /api/v1/experiments/gateway` | 저장된 심사 결과로 제출 경로 실험 |
 | `POST /api/v1/experiments/constellation` | 저장된 심사 결과를 참조해 프로토콜 모델 실험 |
+| `GET /api/v1/experiments/{recordId}` | 저장된 실험 입력·정책·결과 조회 |
+| `GET /api/v1/experiments` | type·intentId·decisionId 필터와 cursor로 실험 기록 조회 |
+| `GET /api/v1/cases` | 서버에 저장한 FE 케이스 목록 조회 |
+| `GET /api/v1/cases/{caseId}` | 케이스 입력·분석·정책·실험 스냅샷 조회 |
+| `PUT /api/v1/cases/{caseId}` | revision을 확인해 케이스 생성·수정 |
+| `DELETE /api/v1/cases/{caseId}` | revision을 확인해 케이스 삭제 |
 
 FE는 Public API만 사용합니다. Backend는 저장된 원본 평가·결정을 내부 요청에 사용하며, 브라우저에서 임의로 만든 정책 결정을 받지 않습니다. 계약의 오류 형식은 `{error: {code, message, retryable}, requestId}`이며 요청 추적에는 `X-Request-ID`를 사용합니다.
+
+실험 POST의 결과 형식은 유지하며 `Location`에 저장된 감사 기록 URL을 제공합니다. `EXPERIMENTS_DIR`은 로컬 기본 `.local-data/experiments`, Compose에서는 데이터 볼륨 아래 경로를 사용합니다. `down`은 기록을 보존하고 `down -v`는 볼륨까지 삭제합니다. 저장·재조회 세부 규약은 [Backend README](apps/backend/README.md)를 참고합니다.
 
 ## 검증
 
@@ -212,8 +220,8 @@ Windows PowerShell에서는 Python 실행 경로를 `.venv/Scripts/python.exe`�
 
 ## 데이터 보관과 현재 한계
 
-- Backend의 분석·심사 기록은 메모리에 저장합니다. 재시작하면 사라지며, 지속 수집·운영 DB 적재는 구현되어 있지 않습니다. FE 케이스는 브라우저 IndexedDB에 저장하며 내보내기·가져오기를 지원합니다.
+- Backend의 분석·심사는 메모리에 저장하지만, 성공한 실험의 입력·원본 정책·결과는 파일 감사 기록으로 보관합니다. Compose의 `backend-data` 볼륨으로 재시작 후에도 실험 기록을 조회할 수 있습니다. Backend 모드의 FE 케이스(분석·정책 스냅샷과 실험 기록)도 같은 볼륨에 영속 저장하고 목록·상세 화면에서 다시 조회합니다. 기존 브라우저 기록은 서버 저장을 확인한 뒤 이전합니다. Mock 모드만 로컬 IndexedDB를 사용하며 지속 수집·운영 DB 적재는 구현되어 있지 않습니다.
 - 저장된 메인넷 수집본은 특정 시점의 기록입니다. 현재 지갑 상태나 평가의 신선도를 보장하지 않습니다. 실제 데이터와 합성 데이터, OFAC 레이블과 테스트 레이블은 별도로 표시합니다.
-- Backend는 내부 응답의 연결 관계와 일부 구조를 검사하지만 전체 스키마 검증에는 누락이 있습니다. 잘못된 KYT 점수나 필수 필드가 빠진 Gateway 결과를 공개 API로 통과시키는 경우가 확인되었으며 보완이 필요합니다. FE는 응답 스키마 위반을 감지하면 결과 표시를 중단합니다.
+- Backend는 공통 JSON Schema로 Public 요청·성공 응답과 내부 모듈 응답을 검증하고, 요청 범위·전송·근거·정책 연결 관계도 확인합니다. 잘못된 내부 결과는 공개하거나 성공 실험 기록으로 저장하지 않습니다. FE도 응답 스키마를 별도로 검증합니다.
 - Constellation의 `0.1.0-draft`와 `0.1.0-single-leader`는 실험용 구현입니다. 공통 계약의 승인 모델 목록은 아직 비어 있지만 구현에서는 두 모델이 기본 활성화되어 있어 승인·버전 정책을 맞추는 작업이 남아 있습니다. 운영 구성도 리서치 승인이나 실제 프로토콜 검증을 뜻하지 않습니다.
 - Gateway는 제출 경로를 모의 실행하며 `actualBroadcast`는 항상 false입니다. ALLOW나 모의 제출 허용은 실제 송금·거래 포함·안전성을 보장하지 않습니다.

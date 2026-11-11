@@ -605,6 +605,34 @@
     {
       "path": "constellation/mock-result.json",
       "schema": "../schemas/experiment.schema.json#/$defs/ConstellationSimulationResult"
+    },
+    {
+      "path": "api/experiment-gateway-record.json",
+      "schema": "../schemas/api.schema.json#/$defs/ExperimentRecord"
+    },
+    {
+      "path": "api/experiment-constellation-record.json",
+      "schema": "../schemas/api.schema.json#/$defs/ExperimentRecord"
+    },
+    {
+      "path": "api/experiments.json",
+      "schema": "../schemas/api.schema.json#/$defs/ExperimentPage"
+    },
+    {
+      "path": "api/case-document.json",
+      "schema": "../schemas/api.schema.json#/$defs/CaseDocument"
+    },
+    {
+      "path": "api/case-write.json",
+      "schema": "../schemas/api.schema.json#/$defs/CaseWrite"
+    },
+    {
+      "path": "api/cases.json",
+      "schema": "../schemas/api.schema.json#/$defs/CasePage"
+    },
+    {
+      "path": "api/case-deleted.json",
+      "schema": "../schemas/api.schema.json#/$defs/CaseDeleted"
     }
   ]
 }

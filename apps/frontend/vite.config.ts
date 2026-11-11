@@ -40,6 +40,8 @@ export default defineConfig(({ mode }) => {
       },
     },
     test: {
+      // Tests use their own MSW server, even when invoked inside a Backend-mode Compose service.
+      env: { VITE_API_MODE: 'mock', VITE_CONSTELLATION_MODELS: '', VITE_DEMO_FIXTURES: 'on' },
       environment: 'jsdom',
       include: ['src/**/*.test.{ts,tsx}'],
       setupFiles: ['src/test/setup.ts'],

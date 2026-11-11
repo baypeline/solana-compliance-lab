@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router'
+import { useCases } from '../cases/useCases'
 import { useT } from '../i18n/hooks'
 import { backendLabel, currentApiMode } from './apiMode'
 import { getIdentity } from './identity'
@@ -7,6 +8,7 @@ import { WordmarkGlyph } from './Wordmark'
 
 export function AppShell() {
   const t = useT()
+  const { storageError, saving, ready, retrySave, reload } = useCases()
   const identity = getIdentity()
   const mode = currentApiMode()
   return (
@@ -30,6 +32,14 @@ export function AppShell() {
           <SettingsMenu />
         </div>
       </header>
+      {storageError && <section className="notice notice-warn" role="alert">
+        <p>{t(ready ? 'ui.storage.writeFailed' : 'ui.storage.loadFailed')}</p>
+        <p className="caption">{storageError}</p>
+        {ready && <button type="button" className="btn" disabled={saving} onClick={() => void retrySave().catch(() => {})}>{t('ui.storage.retry')}</button>}
+        <button type="button" className="btn" disabled={saving} onClick={() => void reload()}>{t(ready ? 'ui.storage.discardReload' : 'ui.storage.reload')}</button>
+      </section>}
+      {!ready && !storageError && <p className="caption" role="status">{t('ui.storage.loading')}</p>}
+      {saving && <p className="caption" role="status">{t('ui.storage.saving')}</p>}
       <Outlet />
     </>
   )

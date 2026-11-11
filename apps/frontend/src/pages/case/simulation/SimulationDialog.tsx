@@ -48,7 +48,7 @@ function DialogBody({ record, run, onRerun, rerunning }: { record: CaseRecord; r
       const records = await runGatewaySet(api, run)
       markFresh(records[0].key)
       await patch((r) => ({ ...r, gateway: [...r.gateway, ...records] }))
-    } finally {
+    } catch { /* The shared storage notice retains failed writes for retry. */ } finally {
       flights.set(run.runId, false)
     }
   }, [api, run, patch])

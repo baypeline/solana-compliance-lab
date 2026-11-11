@@ -45,7 +45,7 @@ public class BackendConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
                 .allowedOrigins(properties.corsAllowedOrigins().toArray(String[]::new))
-                .allowedMethods("GET", "POST")
+                .allowedMethods("GET", "POST", "PUT", "DELETE")
                 .allowedHeaders("Content-Type", "X-Request-ID")
                 .exposedHeaders("X-Request-ID", "Location");
     }

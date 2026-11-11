@@ -18,7 +18,7 @@ export function NewCasePage({ runOptions }: { runOptions?: Partial<RunCaseOption
   const t = useT()
   const api = useApi()
   const navigate = useNavigate()
-  const { cases, save } = useCases()
+  const { cases, save, ready } = useCases()
   const [form, setForm] = useState<FormState>(() => initialForm(new Date(), scenariosFor(currentApiMode()).map((s) => s.fixtureId)))
   const [errors, setErrors] = useState<FormErrors>({})
   const [progress, setProgress] = useState<RunProgress | null>(null)
@@ -40,23 +40,26 @@ export function NewCasePage({ runOptions }: { runOptions?: Partial<RunCaseOption
       record.current = next
       return save(next)
     }
-    const final = await runCase(api, base.input, (p, run) => {
-      setProgress(p)
-      void upsert(run)
-    }, { apiMode: currentApiMode(), ...runOptions })
-    await upsert(final)
-    setBusy(false)
-    if (final.status === 'DONE') navigate(`/cases/${base.id}`)
-    else if (final.error) setFailure({ error: final.error, step: final.failedStep })
+    try {
+      const final = await runCase(api, base.input, (p, run) => {
+        setProgress(p)
+        void upsert(run).catch(() => {})
+      }, { apiMode: currentApiMode(), ...runOptions })
+      await upsert(final)
+      if (final.status === 'DONE') navigate(`/cases/${base.id}`)
+      else if (final.error) setFailure({ error: final.error, step: final.failedStep })
+    } catch { /* CasesProvider displays the storage failure and keeps the pending snapshot. */ }
+    finally { setBusy(false) }
   }
 
   async function submit(e: FormEvent) {
     e.preventDefault()
+    if (!ready) return
     const v = validateForm(form)
     setErrors(v.errors)
     if (!v.input) return
     const base: CaseRecord = {
-      id: newCaseId(cases),
+      id: currentApiMode() === 'backend' ? `CL-${Date.now()}${crypto.getRandomValues(new Uint32Array(1))[0].toString().padStart(10, '0')}` : newCaseId(cases),
       createdAt: new Date().toISOString(),
       createdBy: getIdentity()?.name ?? 'Unknown',
       input: v.input,
@@ -82,7 +85,7 @@ export function NewCasePage({ runOptions }: { runOptions?: Partial<RunCaseOption
           <TransferForm form={form} set={set} errors={errors} />
         </fieldset>
         <div className="nc-actions">
-          <button type="submit" className="btn btn-primary btn-lg" disabled={busy}>
+          <button type="submit" className="btn btn-primary btn-lg" disabled={busy || !ready}>
             {busy ? t('ui.newcase.running') : t('ui.newcase.run')}
           </button>
         </div>

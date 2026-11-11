@@ -1,4 +1,4 @@
-﻿"""Run from the repository root: python contracts/validate.py."""
+"""Run from the repository root: python contracts/validate.py."""
 from copy import deepcopy
 from urllib.parse import urljoin
 import yaml
@@ -18,7 +18,7 @@ def main():
     spec_uri = (ROOT / "openapi.yaml").as_uri()
     OpenAPIV31SpecValidator(spec, base_uri=spec_uri).validate()
     operations = [op for item in spec["paths"].values() for op in item.values()]
-    require(sum(op["x-audience"]=="PUBLIC" for op in operations)==6, "Expected six Public operations")
+    require(sum(op["x-audience"]=="PUBLIC" for op in operations)==12, "Expected twelve Public operations")
     require(sum(op["x-audience"]=="INTERNAL" for op in operations)==5, "Expected five Internal operations")
     for operation in operations:
         contents = list(operation.get("requestBody", {}).get("content", {}).values())

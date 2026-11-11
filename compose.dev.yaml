@@ -204,6 +204,8 @@ services:
       args:
         MODULE: apps/backend
     environment:
+      CASES_DIR: /workspace/data/cases
+      EXPERIMENTS_DIR: /workspace/data/experiments
       BACKEND_HOST: 0.0.0.0
       SERVER_PORT: '8080'
       COLLECTOR_URL: http://collector:8000
@@ -245,7 +247,10 @@ services:
     - 127.0.0.1:${BACKEND_PORT:-8080}:8080
     volumes:
     - ./apps/backend/src:/workspace/apps/backend/src:ro
+    - ./contracts/schemas:/workspace/contracts/schemas:ro
+    - backend-data:/workspace/data
     - ./contracts/fixtures:/workspace/contracts/fixtures:ro
     - maven-cache:/root/.m2
 volumes:
   maven-cache: null
+  backend-data: null

@@ -14,6 +14,7 @@ public final class ApiContracts {
     }
 
     public static void analysisRequest(JsonNode node) {
+        JsonContracts.request("api", "AnalysisRequest", node);
         Contract.object(node, "request", List.of("address", "network", "mode", "scope"),
                 List.of("fixtureId", "rulesetVersion"));
         Contract.address(node.get("address"), "request.address");
@@ -45,6 +46,7 @@ public final class ApiContracts {
     }
 
     public static void complianceRequest(JsonNode node) {
+        JsonContracts.request("api", "ComplianceRequest", node);
         Contract.object(node, "request", List.of("intent", "senderAnalysisId", "recipientAnalysisId",
                 "policyVersion"), List.of());
         PolicyContracts.intent(node.get("intent"), "request.intent");
@@ -54,6 +56,7 @@ public final class ApiContracts {
     }
 
     public static void gatewayRequest(JsonNode node) {
+        JsonContracts.request("api", "GatewayRequest", node);
         Contract.object(node, "request", List.of("intentId", "decisionId", "route"), List.of());
         Contract.id(node.get("intentId"), "request.intentId");
         Contract.id(node.get("decisionId"), "request.decisionId");
@@ -66,6 +69,7 @@ public final class ApiContracts {
     }
 
     public static void constellationRequest(JsonNode node) {
+        JsonContracts.request("api", "ConstellationRequest", node);
         Contract.object(node, "request", List.of("intentId", "decisionId", "protocolModelVersion", "scenario"),
                 List.of());
         Contract.id(node.get("intentId"), "request.intentId");

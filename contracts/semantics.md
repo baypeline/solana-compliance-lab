@@ -112,3 +112,21 @@ attestationPercent는 0~100 범위입니다. 음수·잘못된 타입 등 구조
 | 502 / 503 | UPSTREAM_UNAVAILABLE |
 
 지원하지 않는 schemaVersion은 다른 스키마 오류보다 먼저 검사합니다. retryable은 실제 원인에 따라 정하며 내부 예외·API 키는 오류 메시지에 노출하지 않습니다.
+
+## 실험 감사 기록
+
+- 성공한 Gateway·Constellation 호출마다 독립적인 `recordId`를 발급하고 원래 Public 요청, 원본 심사 응답(`review`), 결과, 요청 추적 ID와 생성 시각을 보관합니다. 결과의 결정적 `experimentId`·`simulationId`와 실행 기록 ID는 다릅니다.
+- 기존 POST는 결과 객체를 HTTP 200으로 반환하며, 저장이 성공한 뒤에만 `Location`으로 감사 기록 경로를 제공합니다. 잘못된 내부 응답은 저장하거나 성공으로 반환하지 않습니다.
+- `GET /api/v1/experiments/{recordId}`는 저장된 `ExperimentRecord`, 목록 API는 `ExperimentPage`를 반환합니다. GET 응답 헤더의 X-Request-ID는 조회 요청을 추적하며 기록 본문의 requestId는 원래 실행을 추적합니다.
+- type은 GATEWAY/CONSTELLATION입니다. intentId·decisionId는 request와 review에 일치해야 하며 result.intentId도 같아야 합니다. Gateway routeId·policyApplied와 Constellation protocolModelVersion은 원래 요청과 일치해야 합니다.
+- 목록은 createdAt 내림차순, 동률이면 recordId 내림차순으로 정렬합니다. type·intentId·decisionId 필터, 기본 limit 100·최대 1000, 불투명 cursor를 지원합니다. 같은 필터로 다음 페이지를 조회하며 마지막 nextCursor는 null입니다.
+- 없는 기록은 404 NOT_FOUND, 잘못된 필터·limit·cursor는 400 INVALID_REQUEST, 저장·읽기 실패나 손상 파일은 503 UPSTREAM_UNAVAILABLE입니다.
+- 서버 재시작 후에도 감사 기록과 당시 심사 맥락을 조회할 수 있어야 합니다. 원래 분석·심사를 재실행하거나 과거 기록에서 현재 실행 가능한 decisionId를 복원한다는 뜻은 아닙니다.
+
+## FE 케이스 스냅샷
+
+- `CaseRecord`는 FE의 입력·실행·API 응답·실험 표시 이력을 보관합니다. `CaseDocument`는 schemaVersion·revision·case를 포함합니다. 불변 `ExperimentRecord`와 구분하며, 케이스를 실행 API의 신뢰 가능한 원본 심사로 사용하지 않습니다.
+- `PUT /api/v1/cases/{caseId}`는 CaseWrite를 받습니다. 경로 ID와 case.id가 같아야 하며 신규 expectedRevision=0, 수정은 마지막 revision을 사용합니다. 성공 시 revision은 1 증가하고 오래된 revision은 409 CONFLICT로 거부합니다.
+- GET 목록은 caseId 문자열 오름차순으로 최대 100개를 반환합니다. nextCursor를 다음 요청의 cursor로 보내며 마지막은 null입니다. FE는 모든 페이지를 읽은 뒤 생성 시각 내림차순으로 표시합니다.
+- DELETE는 revision 쿼리로 변경 여부를 확인하며 CaseDeleted를 반환합니다. 케이스 삭제는 실험 감사 기록을 삭제하지 않습니다.
+- 없는 케이스는 404, 잘못된 ID·필드·중첩 계약은 400, 저장·읽기 실패나 손상 파일은 503입니다. 저장 성공 전에는 성공 응답을 반환하지 않습니다.

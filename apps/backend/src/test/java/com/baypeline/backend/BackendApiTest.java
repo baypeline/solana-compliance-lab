@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -38,7 +40,9 @@ import org.springframework.test.web.servlet.ResultActions;
  * Public API 전체 흐름. 내부 모듈은 contracts/fixtures 의 합성 응답을 돌려주는 Mock으로 대체한다.
  * compliance.async=false 로 분석 작업을 요청 스레드에서 실행한다.
  */
-@SpringBootTest(properties = "compliance.async=false")
+@SpringBootTest(properties = {"compliance.async=false",
+        "compliance.cases-dir=${java.io.tmpdir}/solana-backend-case-tests-${random.uuid}",
+        "compliance.experiments-dir=${java.io.tmpdir}/solana-backend-tests-${random.uuid}"})
 @AutoConfigureMockMvc
 class BackendApiTest {
 
@@ -222,6 +226,7 @@ class BackendApiTest {
         for (int i = 1; i < 3; i++) {
             ObjectNode copy = first.deepCopy();
             copy.put("id", "transfer-extra-" + i);
+            copy.put("transferOrdinal", i);
             transfers.add(copy);
         }
         ((ObjectNode) snapshot.get("coverage")).put("transferCount", 3);
@@ -322,6 +327,133 @@ class BackendApiTest {
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.error.code").value("UPSTREAM_UNAVAILABLE"))
                 .andExpect(jsonPath("$.error.retryable").value(true));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"range", "enum", "missing", "extra", "dangling", "score-sum"})
+    void malformedKytResponsesNeverBecomePublicResults(String mutation) throws Exception {
+        ObjectNode bad = fixtures.get("sanctioned")[1].deepCopy();
+        switch (mutation) {
+            case "range" -> bad.put("riskScore", 999);
+            case "enum" -> bad.put("riskLevel", "BROKEN");
+            case "missing" -> bad.remove("rulesetVersion");
+            case "extra" -> bad.put("secretExtra", "must not be exposed");
+            case "dangling" -> ((ObjectNode) bad.get("evidences").get(0)).putArray("transferIds").add("missing-transfer");
+            case "score-sum" -> bad.put("riskScore", 90);
+            default -> throw new IllegalArgumentException();
+        }
+        fixtures.get("sanctioned")[1] = bad;
+        String id = createAnalysis(RECIPIENT, "sanctioned");
+        mvc.perform(get("/api/v1/analyses/" + id)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("FAILED"))
+                .andExpect(jsonPath("$.evaluation").isEmpty())
+                .andExpect(jsonPath("$.error.code").value("CONTRACT_VALIDATION_FAILED"));
+    }
+
+    @Test
+    void duplicateTransferPositionsAreRejectedEvenWithDifferentNumericRepresentations() throws Exception {
+        ObjectNode snapshot = (ObjectNode) fixtures.get("sanctioned")[0];
+        ArrayNode transfers = (ArrayNode) snapshot.get("transfers");
+        ObjectNode duplicate = transfers.get(0).deepCopy();
+        duplicate.put("id", "another-transfer-id");
+        duplicate.put("transferOrdinal", duplicate.get("transferOrdinal").doubleValue());
+        transfers.add(duplicate);
+        ((ObjectNode) snapshot.get("coverage")).put("transferCount", 2);
+        String id = createAnalysis(RECIPIENT, "sanctioned");
+        mvc.perform(get("/api/v1/analyses/" + id)).andExpect(jsonPath("$.status").value("FAILED"));
+        verify(upstream, never()).evaluateKyt(anyString(), any());
+    }
+
+    @Test
+    void errorCorrelationHeaderIsSingleValuedForFrontendProxies() throws Exception {
+        var response = mvc.perform(get("/api/v1/analyses/missing").header("X-Request-ID", "trace-single"))
+                .andExpect(status().isNotFound()).andReturn().getResponse();
+        assertThat(response.getHeaders("X-Request-ID")).containsExactly("trace-single");
+    }
+
+    @Test
+    void snapshotOutsideRequestedScopeIsRejectedBeforeCallingKyt() throws Exception {
+        ((ObjectNode) fixtures.get("sanctioned")[0].get("coverage")).put("transactionCount", 101);
+        String id = createAnalysis(RECIPIENT, "sanctioned");
+        mvc.perform(get("/api/v1/analyses/" + id)).andExpect(jsonPath("$.status").value("FAILED"));
+        verify(upstream, never()).evaluateKyt(anyString(), any());
+    }
+
+    @Test
+    void policyCannotReferToEvidenceOutsideTheSavedAssessments() throws Exception {
+        ObjectNode bad = (ObjectNode) fixture("sanctioned/decision.json");
+        bad.putArray("referencedEvidenceIds").add("unknown-evidence");
+        when(upstream.decidePolicy(anyString(), any())).thenReturn(bad);
+        String sender = createAnalysis(SENDER, "sender");
+        String recipient = createAnalysis(RECIPIENT, "sanctioned");
+        postJson("/api/v1/compliance/evaluate", complianceRequest(sender, recipient))
+                .andExpect(status().isBadGateway()).andExpect(jsonPath("$.error.code").value("CONTRACT_VALIDATION_FAILED"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"experimentId", "policyApplied", "invalidReason", "extra", "routeMismatch"})
+    void invalidGatewayResultsAreNeitherReturnedNorRecorded(String mutation) throws Exception {
+        String decision = evaluateCompliance();
+        ObjectNode bad = (ObjectNode) fixture("gateway/block-result.json");
+        switch (mutation) {
+            case "invalidReason" -> bad.putArray("reasonCodes").add("NOT_IN_CONTRACT");
+            case "extra" -> bad.put("extra", true);
+            case "routeMismatch" -> bad.put("policyApplied", false);
+            default -> bad.remove(mutation);
+        }
+        when(upstream.runGateway(anyString(), any())).thenReturn(bad);
+        int before = read(mvc.perform(get("/api/v1/experiments").param("decisionId", decision))).get("items").size();
+        postJson("/api/v1/experiments/gateway", gatewayBody(decision)).andExpect(status().isBadGateway());
+        assertThat(read(mvc.perform(get("/api/v1/experiments").param("decisionId", decision))).get("items").size()).isEqualTo(before);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"simulationId", "proposerPathAvailable", "leaderExclusionValid", "invalidReason"})
+    void incompleteConstellationResultsAreRejected(String mutation) throws Exception {
+        String decision = evaluateCompliance();
+        ObjectNode bad = (ObjectNode) fixture("constellation/mock-result.json");
+        if ("invalidReason".equals(mutation)) bad.putArray("explanationCodes").add("NOT_IN_CONTRACT");
+        else bad.remove(mutation);
+        when(upstream.simulateConstellation(anyString(), any())).thenReturn(bad);
+        postJson("/api/v1/experiments/constellation", constellationBody(decision)).andExpect(status().isBadGateway());
+    }
+
+    @Test
+    void successfulExperimentsExposePersistentAuditLocationsAndDistinctExecutions() throws Exception {
+        String decision = evaluateCompliance();
+        ResultActions first = postJson("/api/v1/experiments/gateway", gatewayBody(decision)).andExpect(status().isOk());
+        String location = first.andReturn().getResponse().getHeader("Location");
+        assertThat(location).startsWith("/api/v1/experiments/record-");
+        JsonNode record = read(mvc.perform(get(location)).andExpect(status().isOk())
+                .andExpect(header().exists("X-Request-ID"))
+                .andExpect(jsonPath("$.type").value("GATEWAY"))
+                .andExpect(jsonPath("$.review.decision.decisionId").value(decision)));
+        assertThat(record.get("result")).isEqualTo(read(first));
+        ResultActions repeated = postJson("/api/v1/experiments/gateway", gatewayBody(decision));
+        assertThat(repeated.andReturn().getResponse().getHeader("Location")).isNotEqualTo(location);
+        assertThat(read(repeated).get("experimentId")).isEqualTo(read(first).get("experimentId"));
+        ResultActions simulation = postJson("/api/v1/experiments/constellation", constellationBody(decision));
+        mvc.perform(get(simulation.andReturn().getResponse().getHeader("Location")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.type").value("CONSTELLATION"));
+        mvc.perform(get("/api/v1/experiments").param("type", "CONSTELLATION").param("decisionId", decision))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].type").value("CONSTELLATION"));
+        mvc.perform(get("/api/v1/experiments/missing")).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("NOT_FOUND"));
+        mvc.perform(get("/api/v1/experiments").param("limit", "0")).andExpect(status().isBadRequest());
+        mvc.perform(get("/api/v1/experiments").param("type", "INVALID")).andExpect(status().isBadRequest());
+        mvc.perform(get("/api/v1/experiments").param("cursor", "???")).andExpect(status().isBadRequest());
+    }
+
+    private String gatewayBody(String decision) {
+        return "{\"intentId\":\"sanctioned-intent\",\"decisionId\":\"" + decision
+                + "\",\"route\":{\"routeId\":\"block\",\"policyEnforced\":true,\"warningAcknowledged\":false}}";
+    }
+
+    private String constellationBody(String decision) {
+        return "{\"intentId\":\"sanctioned-intent\",\"decisionId\":\"" + decision
+                + "\",\"protocolModelVersion\":\"0.0.0-research-pending\",\"scenario\":{\"proposerCount\":4,"
+                + "\"rejectingProposerCount\":1,\"submittedToAcceptingProposer\":true,\"psliceAvailable\":true,"
+                + "\"attestationPercent\":100,\"leaderAttemptsExclusion\":true}}";
     }
 
     // ---------- experiments ----------

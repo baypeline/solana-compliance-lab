@@ -13,6 +13,8 @@ spring:
     resources:
       add-mappings: false
 compliance:
+  cases-dir: ${CASES_DIR:.local-data/cases}
+  experiments-dir: ${EXPERIMENTS_DIR:.local-data/experiments}
   max-body-bytes: 1048576
   default-ruleset-version: ${DEFAULT_RULESET_VERSION:1.0.0}
   async: true

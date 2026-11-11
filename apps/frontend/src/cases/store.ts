@@ -1,9 +1,10 @@
-// Where cases live: IndexedDB in the browser, memory in tests (design doc §9). Swappable behind CaseStore.
+// Local storage is used for standalone Mock mode and migration; Backend mode uses serverStore.
 import { createStore, del, get, set, values } from 'idb-keyval'
 import { contractErrors, type ContractDef } from '../api/contract'
 import type { CaseRecord } from './model'
 
 export interface CaseStore {
+  readonly persistence?: 'server'
   list(): Promise<CaseRecord[]>
   get(id: string): Promise<CaseRecord | undefined>
   put(r: CaseRecord): Promise<void>
@@ -52,6 +53,7 @@ export function validateCaseRecord(r: unknown): string[] {
     if (e) at(path, e.slice(0, 2).join('; '))
   }
 
+  contract('case', 'api/CaseRecord', r)
   if (!isStr(r.id) || !/^CL-\d+$/.test(r.id)) at('id', 'must look like CL-0001')
   if (!isStr(r.createdAt)) at('createdAt', 'missing')
   if (!isStr(r.createdBy)) at('createdBy', 'missing')

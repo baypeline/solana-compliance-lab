@@ -314,3 +314,25 @@ export interface ConstellationSimulationResult {
   explanationCodes: SimulationExplanation[]
   simulationOnly: true
 }
+
+/** A server-side immutable execution record; its review remains available after Backend restart. */
+interface ExperimentRecordBase {
+  schemaVersion: '0.1.0'
+  recordId: Id
+  requestId: Id
+  createdAt: UtcTimestamp
+  intentId: Id
+  decisionId: Id
+  review: ComplianceResponse
+}
+
+export type ExperimentRecord = ExperimentRecordBase & (
+  | { type: 'GATEWAY'; request: GatewayRequest; result: GatewayExperimentResult }
+  | { type: 'CONSTELLATION'; request: ConstellationRequest; result: ConstellationSimulationResult }
+)
+
+export interface ExperimentPage {
+  schemaVersion: '0.1.0'
+  items: ExperimentRecord[]
+  pagination: { limit: number; nextCursor: string | null }
+}

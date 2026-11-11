@@ -1,6 +1,7 @@
 // Cases dashboard: how the transfers screened so far were decided (design doc §6.2).
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import { currentApiMode } from '../app/apiMode'
 import type { Action } from '../api/types'
 import { useCases } from '../cases/useCases'
 import { useCopy, useT } from '../i18n/hooks'
@@ -55,6 +56,7 @@ export function DashboardPage() {
         </div>
       </div>
 
+      <p className="caption muted">{t(currentApiMode() === 'backend' ? 'ui.storage.server' : 'ui.storage.local')}</p>
       {unreadable.length > 0 && <p className="notice notice-warn">{t('ui.dashboard.unreadable', { n: unreadable.length })}</p>}
 
       {ready && cases.length === 0 ? (

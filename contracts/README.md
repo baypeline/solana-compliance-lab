@@ -20,7 +20,7 @@
 
 | 파일 | 역할 |
 | --- | --- |
-| `openapi.yaml` | OpenAPI 3.1: Public 6개, Internal 5개 API |
+| `openapi.yaml` | OpenAPI 3.1: Public 12개, Internal 5개 API |
 | `schemas/common.schema.json` | 네트워크·자산·주소·수량·UTC 시각·오류·공통 상태 |
 | `schemas/collector.schema.json` | 수집 요청, NormalizedTransfer, AddressLabel, Snapshot |
 | `schemas/kyt.schema.json` | 평가 요청·결과·규칙·근거 및 Ruleset 설정 |
@@ -45,6 +45,12 @@ JSON Schema 2020-12를 사용합니다. `$defs`를 선택해 검증하며 OpenAP
 | Public | POST `/api/v1/compliance/evaluate` | ComplianceRequest → ComplianceResponse |
 | Public | POST `/api/v1/experiments/gateway` | GatewayRequest → GatewayExperimentResult |
 | Public | POST `/api/v1/experiments/constellation` | ConstellationRequest → ConstellationSimulationResult |
+| Public | GET `/api/v1/experiments/{recordId}` | 실행 기록 ID → ExperimentRecord |
+| Public | GET `/api/v1/experiments` | 필터·cursor·limit → ExperimentPage |
+| Public | GET `/api/v1/cases` | cursor → CasePage |
+| Public | GET `/api/v1/cases/{caseId}` | 케이스 ID → CaseDocument |
+| Public | PUT `/api/v1/cases/{caseId}` | CaseWrite → CaseDocument |
+| Public | DELETE `/api/v1/cases/{caseId}` | revision → CaseDeleted |
 | Internal | POST `/internal/v1/collect` | KYTCollectionRequest → KYTDataSnapshot |
 | Internal | POST `/internal/v1/kyt/evaluate` | KYTEvaluationRequest → KYTEvaluation |
 | Internal | POST `/internal/v1/policy/decide` | PolicyDecisionRequest → ComplianceDecision |

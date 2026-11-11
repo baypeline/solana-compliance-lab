@@ -111,9 +111,9 @@ const ID = /^CL-(\d+)$/
 export function newCaseId(existing: Pick<CaseRecord, 'id'>[]): string {
   const max = existing.reduce((m, c) => {
     const n = ID.exec(c.id)
-    return n ? Math.max(m, Number(n[1])) : m
-  }, 0)
-  return `CL-${String(max + 1).padStart(4, '0')}`
+    return n ? (BigInt(n[1]) > m ? BigInt(n[1]) : m) : m
+  }, 0n)
+  return `CL-${String(max + 1n).padStart(4, '0')}`
 }
 
 export function latestRun(c: CaseRecord): CaseRun | null {

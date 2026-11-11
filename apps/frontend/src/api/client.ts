@@ -1,5 +1,6 @@
 // Backend Public API 클라이언트. 내부(Internal) 경로는 호출하지 않는다.
 // 모든 응답은 공통 계약 스키마로 검증하며, 위반하면 결과로 표시하지 않고 ApiFailure로 올린다.
+import type { CaseRecord } from '../cases/model'
 import { contractErrors, type ContractDef } from './contract'
 import type {
   AnalysisAccepted,
@@ -9,6 +10,8 @@ import type {
   ConstellationRequest,
   ConstellationSimulationResult,
   ErrorResponse,
+  ExperimentRecord,
+  ExperimentPage,
   GatewayExperimentResult,
   GatewayRequest,
   KYTAnalysisResult,
@@ -72,7 +75,7 @@ export function createApiClient(options: ApiClientOptions = {}) {
   const baseUrl = (options.baseUrl ?? '').replace(/\/$/, '')
 
   async function call<T>(
-    method: 'GET' | 'POST',
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     path: string,
     opts: { body?: unknown; bodyDef?: ContractDef; responseDef: ContractDef },
   ): Promise<ApiResult<T>> {
@@ -185,6 +188,41 @@ export function createApiClient(options: ApiClientOptions = {}) {
   }
 
   return {
+    async listCases(cursor?: string) {
+      return call<CasePage>('GET', `/api/v1/cases${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`, { responseDef: 'api/CasePage' })
+    },
+    async getCase(id: string) {
+      const r = await call<CaseDocument>('GET', `/api/v1/cases/${encodeURIComponent(id)}`, { responseDef: 'api/CaseDocument' })
+      linked(r.data.case.id === id, 'case.id', r.requestId)
+      return r
+    },
+    async saveCase(record: CaseRecord, expectedRevision: number) {
+      const r = await call<CaseDocument>('PUT', `/api/v1/cases/${encodeURIComponent(record.id)}`, {
+        body: { schemaVersion: '0.1.0', expectedRevision, case: record }, bodyDef: 'api/CaseWrite', responseDef: 'api/CaseDocument',
+      })
+      linked(r.data.case.id === record.id && r.data.revision === expectedRevision + 1, 'case revision', r.requestId)
+      return r
+    },
+    async deleteCase(id: string, revision: number) {
+      const r = await call<{ schemaVersion: string; caseId: string; deleted: true }>('DELETE', `/api/v1/cases/${encodeURIComponent(id)}?revision=${revision}`, { responseDef: 'api/CaseDeleted' })
+      linked(r.data.caseId === id, 'caseId', r.requestId)
+      return r
+    },
+    async getExperiment(recordId: string) {
+      const r = await call<ExperimentRecord>('GET', `/api/v1/experiments/${encodeURIComponent(recordId)}`, {
+        responseDef: 'api/ExperimentRecord',
+      })
+      linked(r.data.recordId === recordId, 'recordId', r.requestId)
+      return r
+    },
+
+    async listExperiments(params: { type?: ExperimentRecord['type']; intentId?: string; decisionId?: string; limit?: number; cursor?: string } = {}) {
+      const query = new URLSearchParams()
+      for (const [key, value] of Object.entries(params)) if (value !== undefined) query.set(key, String(value))
+      const qs = query.toString()
+      return call<ExperimentPage>('GET', `/api/v1/experiments${qs ? `?${qs}` : ''}`, { responseDef: 'api/ExperimentPage' })
+    },
+
     async createAnalysis(body: AnalysisRequest) {
       const r = await call<AnalysisAccepted>('POST', '/api/v1/analyses', {
         body,
@@ -253,3 +291,6 @@ export function createApiClient(options: ApiClientOptions = {}) {
 }
 
 export type ApiClient = ReturnType<typeof createApiClient>
+
+export interface CaseDocument { schemaVersion: '0.1.0'; revision: number; case: CaseRecord }
+export interface CasePage { schemaVersion: '0.1.0'; items: CaseDocument[]; nextCursor: string | null }

@@ -33,7 +33,7 @@ export function SettingsMenu({
 }) {
   const t = useT()
   const navigate = useNavigate()
-  const { exportText, importText } = useCases()
+  const { exportText, importText, ready, saving } = useCases()
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const panel = useRef<HTMLDivElement>(null)
@@ -92,6 +92,7 @@ export function SettingsMenu({
               {t('ui.settings.import')}
               <input
                 type="file"
+                disabled={!ready || saving}
                 accept="application/json,.json"
                 aria-label={t('ui.settings.import')}
                 onChange={async (e) => {

@@ -70,7 +70,6 @@ public class ApiExceptionHandler {
             String message, boolean retryable) {
         String requestId = RequestIds.current(request);
         return ResponseEntity.status(status)
-                .header(RequestIds.HEADER, requestId)
                 .body(ErrorBodies.of(requestId, code, message, retryable));
     }
 }

@@ -17,6 +17,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.networknt</groupId>
+      <artifactId>json-schema-validator</artifactId>
+      <version>1.5.9</version>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
@@ -28,6 +33,21 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource><directory>src/main/resources</directory></resource>
+      <resource>
+        <directory>../../contracts/schemas</directory>
+        <targetPath>contracts/schemas</targetPath>
+        <includes><include>*.schema.json</include></includes>
+      </resource>
+    </resources>
+    <testResources>
+      <testResource><directory>src/test/resources</directory></testResource>
+      <testResource>
+        <directory>../../contracts/fixtures</directory><targetPath>fixtures</targetPath>
+        <includes><include>api/case-write.json</include></includes>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>

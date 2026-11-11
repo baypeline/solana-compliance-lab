@@ -161,6 +161,15 @@ export const en = {
     },
   },
   ui: {
+    storage: {
+      saving: 'Saving records…',
+      loading: 'Loading records…',
+      incomplete: 'This saved run is still in progress or was interrupted. Reload to refresh it, or start a new run.',
+      loadFailed: 'Records could not be loaded. Retry before creating a case.',
+      writeFailed: 'Some changes have not been saved. Keep this page open and retry. If another browser changed this case, export your records before reloading.',
+      retry: 'Retry saving', reload: 'Reload records', discardReload: 'Discard unsaved changes and reload',
+      server: 'Records are saved on the server.', local: 'Mock mode: records are saved in this browser only.',
+    },
     brand: 'Compliance Lab',
     nav: { cases: 'Cases', main: 'Main' },
     settings: {

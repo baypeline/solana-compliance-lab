@@ -35,6 +35,7 @@ describe('NewCasePage', () => {
   it('runs a fixture case and opens it', async () => {
     const { store } = page()
     fireEvent.change(screen.getByLabelText('Recipient scenario'), { target: { value: 'sanctioned' } })
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Run case' }) as HTMLButtonElement).disabled).toBe(false))
     fireEvent.click(screen.getByRole('button', { name: 'Run case' }))
     // a full run against the mock; allow for a loaded machine
     await waitFor(() => expect(screen.getAllByTestId('location').some((el) => el.textContent === '/cases/CL-0001')).toBe(true), { timeout: 10_000 })
@@ -49,6 +50,7 @@ describe('NewCasePage', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Live on-chain' }))
     fireEvent.change(screen.getByLabelText('Sender address'), { target: { value: 'abc' } })
     fireEvent.change(screen.getByLabelText('Recipient address'), { target: { value: findScenario('normal')!.request.address } })
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Run case' }) as HTMLButtonElement).disabled).toBe(false))
     fireEvent.click(screen.getByRole('button', { name: 'Run case' }))
     expect(await screen.findByText('This is not a Solana address (Base58, 32–44 characters).')).toBeTruthy()
     expect(calls).toBe(0)
@@ -57,6 +59,7 @@ describe('NewCasePage', () => {
   it('rejects an amount with more decimals than the asset has', async () => {
     page()
     fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '0.0000000001' } })
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Run case' }) as HTMLButtonElement).disabled).toBe(false))
     fireEvent.click(screen.getByRole('button', { name: 'Run case' }))
     expect(await screen.findByText('SOL has at most 9 decimal places.')).toBeTruthy()
     expect(calls).toBe(0)
@@ -67,6 +70,7 @@ describe('NewCasePage', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Live on-chain' }))
     fireEvent.change(screen.getByLabelText('Sender address'), { target: { value: findScenario('sender')!.request.address } })
     fireEvent.change(screen.getByLabelText('Recipient address'), { target: { value: findScenario('normal')!.request.address } })
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Run case' }) as HTMLButtonElement).disabled).toBe(false))
     fireEvent.click(screen.getByRole('button', { name: 'Run case' }))
     expect(await screen.findByText('Stopped at: Sender wallet')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()

@@ -19,6 +19,8 @@ services:
       timeout: 3s
       retries: 12
       start_period: 10s
+    volumes:
+    - backend-data:/app/data
     restart: unless-stopped
     read_only: true
     tmpfs:
@@ -176,6 +178,8 @@ services:
       args:
         MODULE: apps/backend
     environment:
+      CASES_DIR: /app/data/cases
+      EXPERIMENTS_DIR: /app/data/experiments
       BACKEND_HOST: 0.0.0.0
       SERVER_PORT: '8080'
       KYT_URL: http://kyt-engine:8001
@@ -212,3 +216,6 @@ services:
     - /tmp
     ports:
     - ${BACKEND_BIND_ADDRESS:-127.0.0.1}:${BACKEND_PORT:-8080}:8080
+
+volumes:
+  backend-data: null

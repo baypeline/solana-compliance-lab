@@ -5,6 +5,8 @@ import com.baypeline.backend.config.BackendProperties;
 import com.baypeline.backend.support.ApiContracts;
 import com.baypeline.backend.support.ApiException;
 import com.baypeline.backend.support.Contract;
+import com.baypeline.backend.support.JsonContracts;
+import com.baypeline.backend.support.ContractSemantics;
 import com.baypeline.backend.upstream.UpstreamException;
 import com.baypeline.backend.upstream.UpstreamServices;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -196,8 +198,17 @@ public class AnalysisService {
 
     /** Snapshot이 이 작업의 요청에 대한 응답인지 확인한다. 세부 구조는 Collector가 계약대로 검증한다. */
     private static void checkSnapshot(AnalysisJob job, JsonNode snapshot) {
+        JsonContracts.upstream("collector", "collector", "KYTDataSnapshot", snapshot);
+        ContractSemantics.snapshot(snapshot);
         String problem = null;
         JsonNode coverage = snapshot.path("coverage");
+        if (!Instant.parse(coverage.get("fromTime").asText()).equals(Instant.parse(job.scope().get("fromTime").asText()))
+                || !Instant.parse(coverage.get("toTime").asText()).equals(Instant.parse(job.scope().get("toTime").asText()))
+                || coverage.get("transactionCount").bigIntegerValue().compareTo(
+                    job.scope().get("maxTransactions").bigIntegerValue()) > 0) {
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "CONTRACT_VALIDATION_FAILED",
+                    "collector returned a snapshot outside the requested scope", false);
+        }
         if (!Contract.SCHEMA_VERSION.equals(snapshot.path("schemaVersion").asText())) {
             problem = "unsupported schemaVersion";
         } else if (!snapshot.path("snapshotId").isTextual() || snapshot.get("snapshotId").textValue().isEmpty()) {
@@ -231,6 +242,8 @@ public class AnalysisService {
 
     /** 평가가 저장된 Snapshot에 대한 것인지와 coverage에 맞는 점수 형태인지 확인한다. 점수를 다시 계산하지 않는다. */
     private static JobStatus checkEvaluation(AnalysisJob job, JsonNode snapshot, JsonNode evaluation) {
+        JsonContracts.upstream("kyt-engine", "kyt", "KYTEvaluation", evaluation);
+        ContractSemantics.evaluation(snapshot, evaluation);
         boolean complete = "COMPLETE".equals(snapshot.get("coverage").get("status").asText());
         JsonNode score = evaluation.path("riskScore");
         JsonNode level = evaluation.path("riskLevel");
@@ -245,7 +258,7 @@ public class AnalysisService {
             problem = "rulesetVersion mismatch";
         } else if (!evaluation.path("detectedRules").isArray() || !evaluation.path("evidences").isArray()) {
             problem = "detectedRules/evidences must be arrays";
-        } else if (complete && !(score.isIntegralNumber() && level.isTextual())) {
+        } else if (complete && !(score.isNumber() && level.isTextual())) {
             problem = "complete coverage requires a numeric riskScore";
         } else if (!complete && !(score.isNull() && level.isNull())) {
             problem = "partial coverage requires null riskScore and riskLevel";

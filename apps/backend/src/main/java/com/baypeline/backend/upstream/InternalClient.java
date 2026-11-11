@@ -2,6 +2,8 @@ package com.baypeline.backend.upstream;
 
 import com.baypeline.backend.config.BackendProperties;
 import com.baypeline.backend.support.RequestIds;
+import com.baypeline.backend.support.JsonContracts;
+import com.baypeline.backend.support.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -53,18 +55,30 @@ public class InternalClient {
                         } catch (IOException e) {
                             throw UpstreamException.invalidResponse(service, "body is not JSON");
                         }
+                        if (response.getHeaders().getOrEmpty(RequestIds.HEADER).size() != 1
+                                || !requestId.equals(response.getHeaders().getFirst(RequestIds.HEADER))) {
+                            throw UpstreamException.invalidResponse(service, "invalid response correlation ID");
+                        }
+                        MediaType contentType = response.getHeaders().getContentType();
+                        if (contentType == null || !MediaType.APPLICATION_JSON.isCompatibleWith(contentType)) {
+                            throw UpstreamException.invalidResponse(service, "response Content-Type is not JSON");
+                        }
                         if (status == 200) {
                             if (node == null || !node.isObject()) {
                                 throw UpstreamException.invalidResponse(service, "body is not a JSON object");
                             }
                             return node;
                         }
-                        JsonNode error = node == null ? null : node.path("error");
-                        String code = error == null ? "UPSTREAM_UNAVAILABLE" : error.path("code").asText("");
-                        String message = error == null ? "" : error.path("message").asText("");
-                        boolean retryable = error != null && error.path("retryable").asBoolean(status >= 500);
-                        throw new UpstreamException(service, status, code,
-                                message.isEmpty() ? "HTTP " + status : message, retryable);
+                        try { JsonContracts.validate("common", "ErrorResponse", node); }
+                        catch (ApiException e) { throw UpstreamException.invalidResponse(service, "invalid error response"); }
+                        if (!requestId.equals(node.get("requestId").asText())) {
+                            throw UpstreamException.invalidResponse(service, "error requestId mismatch");
+                        }
+                        JsonNode error = node.get("error");
+                        String code = error.get("code").asText();
+                        // Messages from upstream services are not trusted for public disclosure.
+                        throw new UpstreamException(service, status, code, "Request failed (" + code + ")",
+                                error.get("retryable").asBoolean());
                     });
         } catch (ResourceAccessException e) {
             throw UpstreamException.unavailable(service);

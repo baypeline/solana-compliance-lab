@@ -38,8 +38,7 @@ function RouteRows({ shown }: { shown: GatewaySimRecord[] }) {
           {t(conclusion)}
         </p>
       )}
-        // One row per route, drawn left to right: the transfer, the route's submission step, the network.
-        // A token travels the row once per run and stops where the simulator said the route stopped it.
+        {/* A token follows each route and stops where the simulator said the route stopped it. */}
         <ol className="routes">
           {shown.map((r, i) => {
             const outcome = r.result?.outcome

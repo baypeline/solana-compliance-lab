@@ -2,7 +2,8 @@ openapi: 3.1.0
 info:
   title: Team-wide Solana Compliance Lab contracts
   version: 0.1.0
-  description: Unified team draft. Constellation rules pending research approval. All examples are synthetic.
+  description: Unified team draft. Constellation rules pending research approval.
+    All examples are synthetic.
 jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
 tags:
 - name: PUBLIC
@@ -624,6 +625,11 @@ paths:
                 synthetic:
                   externalValue: fixtures/gateway/block-result.json
           headers:
+            Location:
+              description: Stored experiment audit URL
+              schema:
+                type: string
+                format: uri-reference
             X-Request-ID:
               description: Request correlation ID
               schema:
@@ -771,6 +777,11 @@ paths:
                 synthetic:
                   externalValue: fixtures/constellation/mock-result.json
           headers:
+            Location:
+              description: Stored experiment audit URL
+              schema:
+                type: string
+                format: uri-reference
             X-Request-ID:
               description: Request correlation ID
               schema:
@@ -1635,3 +1646,844 @@ paths:
         required: false
         schema:
           $ref: schemas/common.schema.json#/$defs/Id
+  /api/v1/experiments/{recordId}:
+    get:
+      operationId: getExperimentRecord
+      tags:
+      - PUBLIC
+      x-audience: PUBLIC
+      summary: getExperimentRecord
+      parameters:
+      - name: recordId
+        in: path
+        required: true
+        schema:
+          $ref: schemas/common.schema.json#/$defs/Id
+      responses:
+        '400':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '404':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '409':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '413':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '415':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '422':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '429':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '500':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '502':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '503':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '200':
+          description: Stored experiment audit record
+          content:
+            application/json:
+              schema:
+                $ref: schemas/api.schema.json#/$defs/ExperimentRecord
+          headers: &id001
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+  /api/v1/experiments:
+    get:
+      operationId: listExperimentRecords
+      tags:
+      - PUBLIC
+      x-audience: PUBLIC
+      summary: listExperimentRecords
+      parameters:
+      - name: type
+        in: query
+        schema:
+          type: string
+          enum:
+          - GATEWAY
+          - CONSTELLATION
+      - name: intentId
+        in: query
+        schema:
+          $ref: schemas/common.schema.json#/$defs/Id
+      - name: decisionId
+        in: query
+        schema:
+          $ref: schemas/common.schema.json#/$defs/Id
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+      - name: cursor
+        in: query
+        schema:
+          $ref: schemas/common.schema.json#/$defs/Id
+      responses:
+        '400':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '404':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '409':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '413':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '415':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '422':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '429':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '500':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '502':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '503':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '200':
+          description: Stored experiments, newest first
+          content:
+            application/json:
+              schema:
+                $ref: schemas/api.schema.json#/$defs/ExperimentPage
+          headers: *id001
+  /api/v1/cases:
+    get:
+      operationId: listCases
+      tags:
+      - PUBLIC
+      x-audience: PUBLIC
+      summary: listCases
+      responses:
+        '400':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '404':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '409':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '413':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '415':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '422':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '429':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '500':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '502':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '503':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '200':
+          description: Stored experiments, newest first
+          content:
+            application/json:
+              schema:
+                $ref: schemas/api.schema.json#/$defs/CasePage
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          pattern: ^CL-[0-9]{1,40}$
+  /api/v1/cases/{caseId}:
+    get:
+      operationId: getCase
+      tags:
+      - PUBLIC
+      x-audience: PUBLIC
+      summary: getCase
+      responses:
+        '400':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '404':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '409':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '413':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '415':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '422':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '429':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '500':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '502':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '503':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '200':
+          description: Stored experiments, newest first
+          content:
+            application/json:
+              schema:
+                $ref: schemas/api.schema.json#/$defs/CaseDocument
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+      parameters:
+      - name: caseId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^CL-[0-9]{1,40}$
+    put:
+      operationId: saveCase
+      tags:
+      - PUBLIC
+      x-audience: PUBLIC
+      summary: saveCase
+      responses:
+        '400':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '404':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '409':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '413':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '415':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '422':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '429':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '500':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '502':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '503':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '200':
+          description: Stored experiments, newest first
+          content:
+            application/json:
+              schema:
+                $ref: schemas/api.schema.json#/$defs/CaseDocument
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+      parameters:
+      - name: caseId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^CL-[0-9]{1,40}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: schemas/api.schema.json#/$defs/CaseWrite
+    delete:
+      operationId: deleteCase
+      tags:
+      - PUBLIC
+      x-audience: PUBLIC
+      summary: deleteCase
+      responses:
+        '400':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '404':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '409':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '413':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '415':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '422':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '429':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '500':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '502':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '503':
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: schemas/common.schema.json#/$defs/ErrorResponse
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+        '200':
+          description: Stored experiments, newest first
+          content:
+            application/json:
+              schema:
+                $ref: schemas/api.schema.json#/$defs/CaseDeleted
+          headers:
+            X-Request-ID:
+              description: Request correlation ID
+              schema:
+                $ref: schemas/common.schema.json#/$defs/Id
+      parameters:
+      - name: caseId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^CL-[0-9]{1,40}$
+      - name: revision
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991

@@ -5,6 +5,8 @@ import com.baypeline.backend.analysis.AnalysisService;
 import com.baypeline.backend.support.ApiContracts;
 import com.baypeline.backend.support.ApiException;
 import com.baypeline.backend.support.Contract;
+import com.baypeline.backend.support.JsonContracts;
+import com.baypeline.backend.support.ContractSemantics;
 import com.baypeline.backend.support.PolicyContracts;
 import com.baypeline.backend.upstream.UpstreamException;
 import com.baypeline.backend.upstream.UpstreamServices;
@@ -74,6 +76,8 @@ public class ComplianceService {
         } catch (UpstreamException e) {
             throw e.toPublic();
         }
+        JsonContracts.upstream("policy-engine", "policy", "ComplianceDecision", decision);
+        ContractSemantics.decision(decision, intent, assessments);
         checkDecision(decision, intent, policyVersion);
 
         reviews.save(new ReviewRecord(decision.get("decisionId").textValue(), intent.get("intentId").textValue(),

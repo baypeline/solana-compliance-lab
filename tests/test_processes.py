@@ -56,7 +56,7 @@ def test_contract_validation_command():
     process = subprocess.run([sys.executable, "contracts/validate.py"], cwd=REPOSITORY,
                              capture_output=True, text=True, timeout=20)
     assert process.returncode == 0, process.stderr
-    assert "151 fixtures" in process.stdout
+    assert f"{len(read_json('fixtures/manifest.json')['fixtures'])} fixtures" in process.stdout
 
 
 @pytest.mark.parametrize("module,service", [("kyt_engine", "kyt-engine"), ("policy_engine", "policy-engine")])
