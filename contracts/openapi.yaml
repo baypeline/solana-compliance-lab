@@ -776,6 +776,8 @@ paths:
               examples:
                 synthetic:
                   externalValue: fixtures/constellation/mock-result.json
+                blockSkipped:
+                  externalValue: fixtures/constellation/research-below-participation-result.json
           headers:
             Location:
               description: Stored experiment audit URL
@@ -905,12 +907,18 @@ paths:
             examples:
               synthetic:
                 externalValue: fixtures/constellation/public-request.json
+              researchBoundary:
+                externalValue: fixtures/constellation/research-boundary-public-request.json
       parameters:
       - name: X-Request-ID
         in: header
         required: false
         schema:
           $ref: schemas/common.schema.json#/$defs/Id
+      description: Team research model 0.2.0-research uses target pslice attestation
+        >=40% and aggregate attester participation >=60%. Below aggregate quorum the
+        block is skipped, not selectively filtered. Earlier 0.1.0 model versions are
+        historical read-only records.
   /internal/v1/collect:
     post:
       operationId: collect
@@ -1516,6 +1524,8 @@ paths:
               examples:
                 synthetic:
                   externalValue: fixtures/constellation/mock-result.json
+                blockSkipped:
+                  externalValue: fixtures/constellation/research-below-participation-result.json
           headers:
             X-Request-ID:
               description: Request correlation ID
@@ -1640,12 +1650,18 @@ paths:
             examples:
               synthetic:
                 externalValue: fixtures/constellation/mock-request.json
+              researchBoundary:
+                externalValue: fixtures/constellation/research-boundary-request.json
       parameters:
       - name: X-Request-ID
         in: header
         required: false
         schema:
           $ref: schemas/common.schema.json#/$defs/Id
+      description: Team research model 0.2.0-research uses target pslice attestation
+        >=40% and aggregate attester participation >=60%. Below aggregate quorum the
+        block is skipped, not selectively filtered. Earlier 0.1.0 model versions are
+        historical read-only records.
   /api/v1/experiments/{recordId}:
     get:
       operationId: getExperimentRecord

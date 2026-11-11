@@ -130,10 +130,17 @@
         "attestationPercent": {
           "type": "number",
           "minimum": 0,
-          "maximum": 100
+          "maximum": 100,
+          "description": "Attesters witnessing the target pslice; not the aggregate block participation rate."
         },
         "leaderAttemptsExclusion": {
           "type": "boolean"
+        },
+        "attesterParticipationPercent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Aggregate attester participation for block validity, independent of the target pslice attestation percentage."
         }
       },
       "required": [
@@ -171,6 +178,27 @@
         "decisionId",
         "protocolModelVersion",
         "scenario"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "protocolModelVersion": {
+                "enum": [
+                  "0.2.0-research",
+                  "0.2.0-single-leader"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "scenario": {
+                "$ref": "experiment.schema.json#/$defs/ResearchConstellationScenario"
+              }
+            }
+          }
+        }
       ]
     },
     "SimulationExplanation": {
@@ -186,7 +214,11 @@
         "NO_EXCLUSION_ATTEMPT",
         "REJECTING_COUNT_EXCEEDS_TOTAL",
         "CONTRADICTORY_SUBMISSION_PATH",
-        "MOCK_RESULT_NOT_PROTOCOL_VALIDATED"
+        "MOCK_RESULT_NOT_PROTOCOL_VALIDATED",
+        "BLOCK_PARTICIPATION_BELOW_THRESHOLD",
+        "BLOCK_PARTICIPATION_THRESHOLD_MET",
+        "PSLICE_ATTESTATION_EXCEEDS_PARTICIPATION",
+        "REQUIRED_PSLICE_UNAVAILABLE"
       ]
     },
     "ConstellationSimulationResult": {
@@ -227,7 +259,8 @@
             "NO_SUBMISSION_PATH",
             "INCLUSION_NOT_ENFORCED",
             "INCLUSION_ENFORCED",
-            "INVALID_SCENARIO"
+            "INVALID_SCENARIO",
+            "BLOCK_SKIPPED"
           ]
         },
         "explanationCodes": {
@@ -240,6 +273,17 @@
         },
         "simulationOnly": {
           "const": true
+        },
+        "blockStatus": {
+          "enum": [
+            "VALID",
+            "SKIPPED",
+            "INVALID_LEADER_EXCLUSION",
+            "NOT_EVALUATED"
+          ]
+        },
+        "modelParameters": {
+          "$ref": "experiment.schema.json#/$defs/ConstellationModelParameters"
         }
       },
       "required": [
@@ -330,8 +374,227 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "protocolModelVersion": {
+                "enum": [
+                  "0.2.0-research",
+                  "0.2.0-single-leader"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "blockStatus"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "protocolModelVersion": {
+                "const": "0.2.0-research"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "modelParameters"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "BLOCK_SKIPPED"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "blockStatus"
+            ],
+            "properties": {
+              "blockStatus": {
+                "const": "SKIPPED"
+              },
+              "leaderExclusionValid": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "blockStatus"
+            ],
+            "properties": {
+              "blockStatus": {
+                "const": "SKIPPED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "outcome": {
+                "const": "BLOCK_SKIPPED"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "blockStatus"
+            ],
+            "properties": {
+              "blockStatus": {
+                "const": "INVALID_LEADER_EXCLUSION"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "outcome": {
+                "const": "INCLUSION_ENFORCED"
+              },
+              "leaderExclusionValid": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "protocolModelVersion": {
+                "const": "0.2.0-single-leader"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "blockStatus": {
+                "const": "NOT_EVALUATED"
+              },
+              "outcome": {
+                "enum": [
+                  "NO_SUBMISSION_PATH",
+                  "INCLUSION_NOT_ENFORCED",
+                  "INVALID_SCENARIO"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "protocolModelVersion": {
+                "const": "0.2.0-research"
+              },
+              "outcome": {
+                "const": "INVALID_SCENARIO"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "blockStatus": {
+                "const": "NOT_EVALUATED"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "protocolModelVersion": {
+                "const": "0.2.0-research"
+              },
+              "outcome": {
+                "const": "INCLUSION_ENFORCED"
+              },
+              "leaderExclusionValid": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "blockStatus": {
+                "const": "INVALID_LEADER_EXCLUSION"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "blockStatus"
+            ],
+            "properties": {
+              "blockStatus": {
+                "const": "VALID"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "leaderExclusionValid": {
+                "enum": [
+                  true,
+                  null
+                ]
+              },
+              "outcome": {
+                "enum": [
+                  "NO_SUBMISSION_PATH",
+                  "INCLUSION_NOT_ENFORCED",
+                  "INCLUSION_ENFORCED"
+                ]
+              }
+            }
+          }
         }
       ]
+    },
+    "ResearchConstellationScenario": {
+      "allOf": [
+        {
+          "$ref": "experiment.schema.json#/$defs/ConstellationScenario"
+        },
+        {
+          "required": [
+            "attesterParticipationPercent"
+          ]
+        }
+      ]
+    },
+    "ConstellationModelParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceId",
+        "psliceInclusionThresholdPercent",
+        "blockParticipationThresholdPercent"
+      ],
+      "properties": {
+        "sourceId": {
+          "const": "team-research-40-60-v1"
+        },
+        "psliceInclusionThresholdPercent": {
+          "const": 40
+        },
+        "blockParticipationThresholdPercent": {
+          "const": 60
+        }
+      }
     }
   }
 }

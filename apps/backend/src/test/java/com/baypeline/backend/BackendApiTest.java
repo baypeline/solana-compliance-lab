@@ -523,6 +523,33 @@ class BackendApiTest {
                 .andExpect(jsonPath("$.error.code").value("NOT_FOUND"));
     }
 
+    @Test
+    void researchBlockSkipIsValidatedSavedAndReloadedWithOriginalParameters() throws Exception {
+        String decision = evaluateCompliance();
+        ObjectNode request = (ObjectNode) fixture("constellation/research-below-participation-public-request.json");
+        request.put("decisionId", decision);
+        when(upstream.simulateConstellation(anyString(), any())).thenReturn(fixture("constellation/research-below-participation-result.json"));
+        ResultActions execution = postJson("/api/v1/experiments/constellation", request.toString())
+                .andExpect(status().isOk()).andExpect(jsonPath("$.outcome").value("BLOCK_SKIPPED"))
+                .andExpect(jsonPath("$.modelParameters.blockParticipationThresholdPercent").value(60));
+        mvc.perform(get(execution.andReturn().getResponse().getHeader("Location")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.request.scenario.attesterParticipationPercent").value(59.99))
+                .andExpect(jsonPath("$.result.blockStatus").value("SKIPPED"));
+        ((ObjectNode) request.get("scenario")).remove("attesterParticipationPercent");
+        postJson("/api/v1/experiments/constellation", request.toString()).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void researchResponseWithoutPinnedParametersIsRejected() throws Exception {
+        String decision = evaluateCompliance();
+        ObjectNode request = (ObjectNode) fixture("constellation/research-boundary-public-request.json");
+        request.put("decisionId", decision);
+        ObjectNode response = (ObjectNode) fixture("constellation/research-boundary-result.json");
+        response.remove("modelParameters");
+        when(upstream.simulateConstellation(anyString(), any())).thenReturn(response);
+        postJson("/api/v1/experiments/constellation", request.toString()).andExpect(status().isBadGateway());
+    }
+
     // ---------- helpers ----------
 
     private String evaluateCompliance() throws Exception {

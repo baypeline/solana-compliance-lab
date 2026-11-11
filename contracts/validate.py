@@ -46,7 +46,7 @@ def main():
     validate("kyt", "Ruleset", read_json("config/rulesets/1.0.0.json"))
     for version in ["1.0.0", "1.1.0"]:
         validate("policy", "Policy", read_json(f"config/policies/{version}.json"))
-    require(read_json("config/protocol-models.json")["approvedVersions"] == [], "Research-approved model is not supplied yet")
+    require(read_json("config/protocol-models.json")["approvedVersions"] == ["0.2.0-research", "0.2.0-single-leader"], "Research model registry drift")
     for directory in sorted((ROOT / "fixtures").iterdir()):
         if not directory.is_dir() or not (directory / "snapshot.json").exists():
             continue
@@ -119,6 +119,10 @@ def main():
     reject("fixtures/constellation/mock-result.json","experiment","ConstellationSimulationResult",lambda d:d.update(simulationOnly=False))
     reject("fixtures/api/failed.json","api","KYTAnalysisResult",lambda d:d.update(error=None))
     reject("fixtures/normal/analysis.json","api","KYTAnalysisResult",lambda d:d.update(status="PARTIAL"))
+    reject("fixtures/constellation/research-boundary-public-request.json","api","ConstellationRequest",lambda d:d["scenario"].pop("attesterParticipationPercent"))
+    reject("fixtures/constellation/research-boundary-public-request.json","api","ConstellationRequest",lambda d:d["scenario"].update(attesterParticipationPercent=101))
+    reject("fixtures/constellation/research-boundary-result.json","experiment","ConstellationSimulationResult",lambda d:d.pop("modelParameters"))
+    reject("fixtures/constellation/research-below-participation-result.json","experiment","ConstellationSimulationResult",lambda d:d.update(leaderExclusionValid=True))
     for path in [ROOT/"README.md",ROOT/"semantics.md",ROOT/"openapi.yaml",*schemas,*(ROOT/"fixtures").rglob("*.json")]:
         content = path.read_text(encoding="utf-8")
         require("\ufffd" not in content and "??" not in content, "Damaged UTF-8 text")

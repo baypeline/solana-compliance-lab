@@ -126,12 +126,13 @@ export function scenarioSender(fixtureId: string): string {
 }
 
 /** Constellation 입력 기본값: contracts/fixtures/constellation/public-request.json의 시나리오 */
-export const defaultConstellationScenario: ConstellationScenario = Object.values(constellationPublicRequest)[0]?.scenario ?? {
+export const defaultConstellationScenario: ConstellationScenario = { ...Object.values(constellationPublicRequest)[0]?.scenario,
   proposerCount: 4,
   rejectingProposerCount: 1,
   submittedToAcceptingProposer: true,
   psliceAvailable: true,
   attestationPercent: 100,
+  attesterParticipationPercent: 100,
   leaderAttemptsExclusion: true,
 }
 

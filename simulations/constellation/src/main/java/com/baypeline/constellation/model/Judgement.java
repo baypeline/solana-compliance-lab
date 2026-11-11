@@ -23,6 +23,7 @@ public record Judgement(
             case "INCLUSION_ENFORCED" -> require(proposerPathAvailable && psliceInclusionEnforced, outcome);
             case "NO_SUBMISSION_PATH" -> require(!proposerPathAvailable && !psliceInclusionEnforced, outcome);
             case "INCLUSION_NOT_ENFORCED" -> require(!psliceInclusionEnforced, outcome);
+            case "BLOCK_SKIPPED" -> require(leaderExclusionValid == null, outcome);
             case "INVALID_SCENARIO" -> require(!proposerPathAvailable && !psliceInclusionEnforced
                     && leaderExclusionValid == null, outcome);
             default -> throw new IllegalArgumentException("Unknown outcome " + outcome);

@@ -501,6 +501,27 @@
         "decisionId",
         "protocolModelVersion",
         "scenario"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "protocolModelVersion": {
+                "enum": [
+                  "0.2.0-research",
+                  "0.2.0-single-leader"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "scenario": {
+                "$ref": "experiment.schema.json#/$defs/ResearchConstellationScenario"
+              }
+            }
+          }
+        }
       ]
     },
     "ExperimentRecord": {
@@ -916,7 +937,28 @@
         "scenario": {
           "$ref": "experiment.schema.json#/$defs/ConstellationScenario"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "version": {
+                "enum": [
+                  "0.2.0-research",
+                  "0.2.0-single-leader"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "scenario": {
+                "$ref": "experiment.schema.json#/$defs/ResearchConstellationScenario"
+              }
+            }
+          }
+        }
+      ]
     },
     "CaseRun": {
       "type": "object",

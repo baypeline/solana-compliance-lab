@@ -1002,3 +1002,6 @@
   table.cases { min-width: 900px; }
   table.cases .pair { white-space: nowrap; }
 }
+.net-invalid-block .net-leader circle { stroke: var(--block); }
+.net-invalid-block .net-leader text { fill: var(--block); }
+.sw-block_skipped { background: var(--review); }

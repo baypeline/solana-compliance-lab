@@ -117,4 +117,18 @@ class ExperimentRepositoryTest {
         assertThatThrownBy(() -> repository.list(null, null, null, "1001", null)).isInstanceOf(ApiException.class);
         assertThatThrownBy(() -> repository.list(null, null, null, "10", "")).isInstanceOf(ApiException.class);
     }
+    @Test
+    void researchParametersAndScenarioRemainReadableAfterRestart() throws Exception {
+        ObjectNode record = record();
+        record.set("request", fixture("constellation/research-below-participation-public-request.json"));
+        ((ObjectNode)record.get("request")).put("decisionId", record.get("decisionId").asText());
+        record.set("result", fixture("constellation/research-below-participation-result.json"));
+        record.put("type", "CONSTELLATION");
+        new ExperimentRepository(mapper, directory.toString()).save(record);
+        var restored = new ExperimentRepository(mapper, directory.toString()).find(record.get("recordId").asText());
+        assertThat(restored.get("result").get("blockStatus").asText()).isEqualTo("SKIPPED");
+        assertThat(restored.get("request").get("scenario").get("attesterParticipationPercent").asDouble()).isEqualTo(59.99);
+        assertThat(restored.get("result").get("modelParameters").get("psliceInclusionThresholdPercent").asInt()).isEqualTo(40);
+    }
+
 }

@@ -7,7 +7,7 @@ services:
       dockerfile: docker/frontend.Dockerfile
       target: runtime
       args:
-        VITE_CONSTELLATION_MODELS: ${VITE_CONSTELLATION_MODELS:-0.1.0-draft,0.1.0-single-leader}
+        VITE_CONSTELLATION_MODELS: ${VITE_CONSTELLATION_MODELS:-0.2.0-research,0.2.0-single-leader}
     ports:
     - ${FRONTEND_BIND_ADDRESS:-127.0.0.1}:${FRONTEND_PORT:-5173}:8080
     depends_on:
@@ -156,7 +156,6 @@ services:
     environment:
       CONSTELLATION_HOST: 0.0.0.0
       SERVER_PORT: '8004'
-      CONSTELLATION_ATTESTATION_THRESHOLD: ${CONSTELLATION_ATTESTATION_THRESHOLD:-66.67}
       CONSTELLATION_MOCK_ENABLED: 'false'
     healthcheck:
       test:

@@ -272,7 +272,9 @@ export interface ConstellationScenario {
   rejectingProposerCount: number
   submittedToAcceptingProposer: boolean
   psliceAvailable: boolean
+  /** Target pslice witnesses. Aggregate participation is separate; optional only for historical records. */
   attestationPercent: number
+  attesterParticipationPercent?: number
   leaderAttemptsExclusion: boolean
 }
 
@@ -288,6 +290,7 @@ export type ConstellationOutcome =
   | 'INCLUSION_NOT_ENFORCED'
   | 'INCLUSION_ENFORCED'
   | 'INVALID_SCENARIO'
+  | 'BLOCK_SKIPPED'
 
 export type SimulationExplanation =
   | 'NO_ACCEPTING_PROPOSER'
@@ -301,6 +304,10 @@ export type SimulationExplanation =
   | 'REJECTING_COUNT_EXCEEDS_TOTAL'
   | 'CONTRADICTORY_SUBMISSION_PATH'
   | 'MOCK_RESULT_NOT_PROTOCOL_VALIDATED'
+  | 'BLOCK_PARTICIPATION_BELOW_THRESHOLD'
+  | 'BLOCK_PARTICIPATION_THRESHOLD_MET'
+  | 'PSLICE_ATTESTATION_EXCEEDS_PARTICIPATION'
+  | 'REQUIRED_PSLICE_UNAVAILABLE'
 
 export interface ConstellationSimulationResult {
   schemaVersion: '0.1.0'
@@ -312,6 +319,8 @@ export interface ConstellationSimulationResult {
   leaderExclusionValid: boolean | null
   outcome: ConstellationOutcome
   explanationCodes: SimulationExplanation[]
+  blockStatus?: 'VALID' | 'SKIPPED' | 'INVALID_LEADER_EXCLUSION' | 'NOT_EVALUATED'
+  modelParameters?: { sourceId: 'team-research-40-60-v1'; psliceInclusionThresholdPercent: 40; blockParticipationThresholdPercent: 60 }
   simulationOnly: true
 }
 

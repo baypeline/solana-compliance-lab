@@ -149,7 +149,7 @@ check("unknown policyVersion -> 422", s == 422 and e["error"]["code"] == "UNSUPP
 
 # 4) constellation
 scenario = {"proposerCount": 4, "rejectingProposerCount": 1, "submittedToAcceptingProposer": True, "psliceAvailable": True,
-            "attestationPercent": 100, "leaderAttemptsExclusion": True}
+            "attestationPercent": 100, "attesterParticipationPercent": 100, "leaderAttemptsExclusion": True}
 s, _, c = call("POST", "/api/v1/experiments/constellation", {"intentId": "sanctioned-intent", "decisionId": block["decision"]["decisionId"],
                "protocolModelVersion": "0.0.0-research-pending", "scenario": scenario})
 check("constellation mock 200", s == 200, (s, c)); schema("constellation", "experiment", "ConstellationSimulationResult", c)
@@ -169,13 +169,17 @@ def simulate(version, sc):
         schema(f"constellation {version}", "experiment", "ConstellationSimulationResult", c)
         audit_record(h, c)
     return c
-c = simulate("0.1.0-draft", scenario)
+c = simulate("0.2.0-research", scenario)
 check("draft: attested pslice -> INCLUSION_ENFORCED, exclusion invalid", c["outcome"] == "INCLUSION_ENFORCED" and c["leaderExclusionValid"] is False, c)
-c = simulate("0.1.0-single-leader", scenario)
+c = simulate("0.2.0-single-leader", scenario)
 check("baseline: INCLUSION_NOT_ENFORCED, exclusion valid", c["outcome"] == "INCLUSION_NOT_ENFORCED" and c["leaderExclusionValid"] is True, c)
-c = simulate("0.1.0-draft", {**scenario, "attestationPercent": 50})
+c = simulate("0.2.0-research", {**scenario, "attestationPercent": 39.99})
 check("draft: low attestation -> NOT_ENFORCED", c["outcome"] == "INCLUSION_NOT_ENFORCED" and "ATTESTATION_CONDITION_NOT_MET" in c["explanationCodes"], c)
-c = simulate("0.1.0-draft", {**scenario, "rejectingProposerCount": 4, "submittedToAcceptingProposer": False})
+for pslice, participation, expected in [(39.99,60,"INCLUSION_NOT_ENFORCED"),(40,60,"INCLUSION_ENFORCED"),(50,60,"INCLUSION_ENFORCED"),(40,59.99,"BLOCK_SKIPPED"),(70,60,"INVALID_SCENARIO")]:
+    boundary = simulate("0.2.0-research", {**scenario, "attestationPercent":pslice,"attesterParticipationPercent":participation})
+    check(f"40/60 research boundary {pslice}/{participation}", boundary["outcome"] == expected, boundary)
+    check("pinned research parameters", boundary["modelParameters"] == {"sourceId":"team-research-40-60-v1","psliceInclusionThresholdPercent":40,"blockParticipationThresholdPercent":60})
+c = simulate("0.2.0-research", {**scenario, "rejectingProposerCount": 4, "submittedToAcceptingProposer": False})
 check("draft: all reject -> NO_SUBMISSION_PATH", c["outcome"] == "NO_SUBMISSION_PATH" and c["explanationCodes"] == ["NO_ACCEPTING_PROPOSER"], c)
 
 # 5) errors / headers
@@ -209,7 +213,7 @@ run["gateway"] = [{"key": "case-gateway", "at": case["createdAt"],
                    "route": {"routeId": "block", "policyEnforced": True, "warningAcknowledged": False},
                    "result": block_gateway, "error": None}]
 run["constellation"] = [{"key": "case-constellation", "at": case["createdAt"], "batch": "case-batch",
-                         "purpose": "compare", "version": "0.1.0-draft",
+                         "purpose": "compare", "version": "0.2.0-research",
                          "scenario": {**scenario, "rejectingProposerCount": 4, "submittedToAcceptingProposer": False},
                          "result": c, "error": None}]
 status, _, saved_case = call("PUT", f"/api/v1/cases/{case_id}", case_write)

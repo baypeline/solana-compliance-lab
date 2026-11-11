@@ -29,7 +29,7 @@ public class ExperimentService {
     private static final Set<String> GATEWAY_OUTCOMES = Set.of("SUBMISSION_ALLOWED", "SUBMISSION_REJECTED",
             "REVIEW_REQUIRED");
     private static final Set<String> SIMULATION_OUTCOMES = Set.of("NO_SUBMISSION_PATH", "INCLUSION_NOT_ENFORCED",
-            "INCLUSION_ENFORCED", "INVALID_SCENARIO");
+            "INCLUSION_ENFORCED", "INVALID_SCENARIO", "BLOCK_SKIPPED");
 
     private final ExperimentRepository records;
     private final Clock clock;

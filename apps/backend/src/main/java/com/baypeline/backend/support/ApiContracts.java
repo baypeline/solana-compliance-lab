@@ -79,13 +79,14 @@ public final class ApiContracts {
         String path = "request.scenario";
         Contract.object(scenario, path, List.of("proposerCount", "rejectingProposerCount",
                 "submittedToAcceptingProposer", "psliceAvailable", "attestationPercent", "leaderAttemptsExclusion"),
-                List.of());
+                List.of("attesterParticipationPercent"));
         Contract.integer(scenario.get("proposerCount"), path + ".proposerCount", 1, Integer.MAX_VALUE);
         Contract.integer(scenario.get("rejectingProposerCount"), path + ".rejectingProposerCount", 0,
                 Integer.MAX_VALUE);
         Contract.bool(scenario.get("submittedToAcceptingProposer"), path + ".submittedToAcceptingProposer");
         Contract.bool(scenario.get("psliceAvailable"), path + ".psliceAvailable");
         Contract.number(scenario.get("attestationPercent"), path + ".attestationPercent", 0, 100);
+        if (scenario.has("attesterParticipationPercent")) Contract.number(scenario.get("attesterParticipationPercent"), path + ".attesterParticipationPercent", 0, 100);
         Contract.bool(scenario.get("leaderAttemptsExclusion"), path + ".leaderAttemptsExclusion");
     }
 }

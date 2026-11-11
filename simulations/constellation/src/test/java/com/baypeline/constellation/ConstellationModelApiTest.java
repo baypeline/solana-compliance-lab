@@ -29,21 +29,21 @@ class ConstellationModelApiTest {
 
     @Test
     void draftModelEnforcesInclusionForAttestedPslice() throws Exception {
-        simulate(request("0.1.0-draft"))
+        simulate(request("0.2.0-research"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.protocolModelVersion").value("0.1.0-draft"))
+                .andExpect(jsonPath("$.protocolModelVersion").value("0.2.0-research"))
                 .andExpect(jsonPath("$.outcome").value("INCLUSION_ENFORCED"))
                 .andExpect(jsonPath("$.proposerPathAvailable").value(true))
                 .andExpect(jsonPath("$.psliceInclusionEnforced").value(true))
                 .andExpect(jsonPath("$.leaderExclusionValid").value(false))
-                .andExpect(jsonPath("$.explanationCodes[0]").value("ATTESTATION_CONDITION_MET"))
-                .andExpect(jsonPath("$.explanationCodes[1]").value("LEADER_EXCLUSION_INVALID"))
+                .andExpect(jsonPath("$.explanationCodes[0]").value("BLOCK_PARTICIPATION_THRESHOLD_MET"))
+                .andExpect(jsonPath("$.explanationCodes[2]").value("LEADER_EXCLUSION_INVALID"))
                 .andExpect(jsonPath("$.simulationOnly").value(true));
     }
 
     @Test
     void baselineComparisonOnSameScenario() throws Exception {
-        simulate(request("0.1.0-single-leader"))
+        simulate(request("0.2.0-single-leader"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.outcome").value("INCLUSION_NOT_ENFORCED"))
                 .andExpect(jsonPath("$.leaderExclusionValid").value(true));
@@ -51,14 +51,14 @@ class ConstellationModelApiTest {
 
     @Test
     void invalidScenarioCheckedBeforeModel() throws Exception {
-        ObjectNode request = request("0.1.0-draft");
+        ObjectNode request = request("0.2.0-research");
         ((ObjectNode) request.get("scenario")).put("rejectingProposerCount", 5);
         simulate(request).andExpect(jsonPath("$.outcome").value("INVALID_SCENARIO"));
     }
 
     @Test
     void reproducibleAcrossRequestIds() throws Exception {
-        ObjectNode request = request("0.1.0-draft");
+        ObjectNode request = request("0.2.0-research");
         JsonNode first = read(simulate(request));
         request.put("requestId", "other-request");
         assertThat(read(simulate(request))).isEqualTo(first);
@@ -67,6 +67,7 @@ class ConstellationModelApiTest {
     private ObjectNode request(String version) throws Exception {
         ObjectNode request = (ObjectNode) Fixtures.fixture(mapper, "mock-request.json");
         request.put("protocolModelVersion", version);
+        ((ObjectNode) request.get("scenario")).put("attesterParticipationPercent", 100);
         return request;
     }
 

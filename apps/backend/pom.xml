@@ -45,7 +45,7 @@
       <testResource><directory>src/test/resources</directory></testResource>
       <testResource>
         <directory>../../contracts/fixtures</directory><targetPath>fixtures</targetPath>
-        <includes><include>api/case-write.json</include></includes>
+        <includes><include>api/case-write.json</include><include>constellation/research-*.json</include></includes>
       </testResource>
     </testResources>
     <plugins>

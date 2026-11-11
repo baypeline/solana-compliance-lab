@@ -59,3 +59,27 @@ describe('network result card', () => {
     expect(container.querySelector('svg')).toBeNull()
   })
 })
+
+it('shows a skipped block without drawing a successful transfer into the leader', () => {
+  const { container } = render(<ResultCard animated={false} rec={record('0.2.0-research', {
+    blockStatus: 'SKIPPED', outcome: 'BLOCK_SKIPPED', psliceInclusionEnforced: false,
+    explanationCodes: ['BLOCK_PARTICIPATION_BELOW_THRESHOLD'],
+    modelParameters: { sourceId: 'team-research-40-60-v1', psliceInclusionThresholdPercent: 40, blockParticipationThresholdPercent: 60 },
+  }, { ...scenario, attestationPercent: 40, attesterParticipationPercent: 59.99 })} />)
+  expect(screen.getByText('Block skipped.')).toBeTruthy()
+  expect(screen.getByText('The block is skipped; this is not a selective transaction block.')).toBeTruthy()
+  expect(container.querySelectorAll('.to-leader, .batch-attested')).toHaveLength(0)
+  expect(screen.getByText('Applied rules: pslice ≥ 40%, aggregate participation ≥ 60%.')).toBeTruthy()
+})
+it('labels old results as historical rather than applying the current thresholds', () => {
+  render(<ResultCard animated={false} rec={record('0.1.0-draft', {})} />)
+  expect(screen.getByText('Historical model result. Its original rules differ from the current 40% / 60% model.')).toBeTruthy()
+})
+it('draws an invalid leader exclusion as an invalid block instead of a successful inclusion', () => {
+  const { container } = render(<ResultCard animated={false} rec={record('0.2.0-research', {
+    blockStatus: 'INVALID_LEADER_EXCLUSION', outcome: 'INCLUSION_ENFORCED', psliceInclusionEnforced: true,
+    leaderExclusionValid: false, explanationCodes: ['ATTESTATION_CONDITION_MET', 'LEADER_EXCLUSION_INVALID'],
+  })} />)
+  expect(container.querySelector('.net-leader text')?.textContent).toBe('✕')
+  expect(screen.getByText('A block omitting this required pslice would be invalid.')).toBeTruthy()
+})

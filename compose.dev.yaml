@@ -11,7 +11,7 @@ services:
       VITE_API_BASE_URL: ""
       VITE_BACKEND_URL: http://backend:8080
       VITE_DEMO_FIXTURES: 'off'
-      VITE_CONSTELLATION_MODELS: ${VITE_CONSTELLATION_MODELS:-0.1.0-draft,0.1.0-single-leader}
+      VITE_CONSTELLATION_MODELS: ${VITE_CONSTELLATION_MODELS:-0.2.0-research,0.2.0-single-leader}
     ports:
     - 127.0.0.1:${FRONTEND_PORT:-5173}:5173
     volumes:
@@ -174,7 +174,6 @@ services:
     environment:
       CONSTELLATION_HOST: 0.0.0.0
       SERVER_PORT: '8004'
-      CONSTELLATION_ATTESTATION_THRESHOLD: ${CONSTELLATION_ATTESTATION_THRESHOLD:-66.67}
       CONSTELLATION_MOCK_ENABLED: 'true'
     healthcheck:
       test:

@@ -379,7 +379,7 @@ export function createMockBackend(options: MockBackendOptions & { storage?: Mock
         return fail(
           422,
           'UNSUPPORTED_VERSION',
-          `[Mock] No protocol model is approved. The Mock only returns a placeholder result for ${protocolModels.mockVersion}.`,
+          `[Mock] The Mock does not execute research rules. It only returns a placeholder result for ${protocolModels.mockVersion}.`,
           false,
           requestId,
         )

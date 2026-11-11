@@ -28,6 +28,12 @@
   </dependencies>
 
   <build>
+    <testResources>
+      <testResource><directory>src/test/resources</directory></testResource>
+      <testResource><directory>../../contracts/fixtures</directory><targetPath>fixtures</targetPath>
+        <includes><include>constellation/research-*.json</include></includes>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>

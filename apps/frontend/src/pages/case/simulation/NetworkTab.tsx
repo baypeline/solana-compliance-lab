@@ -22,13 +22,16 @@ const OUTCOME_FILL: Record<ConstellationSimulationResult['outcome'], string> = {
   INCLUSION_NOT_ENFORCED: 'url(#sw-hatch)',
   NO_SUBMISSION_PATH: 'var(--deep)',
   INVALID_SCENARIO: 'var(--fill-2)',
+  BLOCK_SKIPPED: 'var(--review)',
 }
 
-const BASE: ConstellationScenario = { ...defaultConstellationScenario, proposerCount: 4, rejectingProposerCount: 1, submittedToAcceptingProposer: true, psliceAvailable: true, leaderAttemptsExclusion: true }
+const BASE: ConstellationScenario = { ...defaultConstellationScenario, proposerCount: 16, rejectingProposerCount: 1, attesterParticipationPercent: 100, submittedToAcceptingProposer: true, psliceAvailable: true, leaderAttemptsExclusion: true }
 // Inputs only. What each scenario leads to is whatever the simulator answers.
 const PRESETS: { label: MessageKey; scenario: ConstellationScenario }[] = [
   { label: 'ui.sim.network.presetHigh', scenario: { ...BASE, attestationPercent: 100 } },
   { label: 'ui.sim.network.presetLow', scenario: { ...BASE, attestationPercent: 30 } },
+  { label: 'ui.sim.network.presetBoundary', scenario: { ...BASE, attestationPercent: 40, attesterParticipationPercent: 60 } },
+  { label: 'ui.sim.network.presetParticipationLow', scenario: { ...BASE, attestationPercent: 40, attesterParticipationPercent: 59.99 } },
   { label: 'ui.sim.network.presetReject', scenario: { ...BASE, attestationPercent: 100, rejectingProposerCount: BASE.proposerCount, submittedToAcceptingProposer: false } },
 ]
 const same = (a: ConstellationScenario, b: ConstellationScenario) => (Object.keys(a) as (keyof ConstellationScenario)[]).every((k) => a[k] === b[k])
@@ -100,13 +103,13 @@ export function NetworkTab({
     void go('run', PRESETS[0].scenario)
   }, [neverRan, run.runId, go])
 
-  const valid = () => Number.isInteger(s.proposerCount) && s.proposerCount >= 1 && Number.isInteger(s.rejectingProposerCount) && s.rejectingProposerCount >= 0 && s.attestationPercent >= 0 && s.attestationPercent <= 100
+  const valid = () => Number.isInteger(s.proposerCount) && s.proposerCount >= 1 && Number.isInteger(s.rejectingProposerCount) && s.rejectingProposerCount >= 0 && s.attestationPercent >= 0 && s.attestationPercent <= 100 && s.attesterParticipationPercent !== undefined && s.attesterParticipationPercent >= 0 && s.attesterParticipationPercent <= 100
   const custom = (kind: 'run' | 'sweep') => {
     if (!valid()) return setBad(true)
     setBad(false)
     void go(kind, s)
   }
-  const num = (k: 'proposerCount' | 'rejectingProposerCount' | 'attestationPercent') => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const num = (k: 'proposerCount' | 'rejectingProposerCount' | 'attestationPercent' | 'attesterParticipationPercent') => (e: React.ChangeEvent<HTMLInputElement>) =>
     setS((x) => ({ ...x, [k]: e.target.value === '' ? NaN : Number(e.target.value) }))
   const flag = (k: 'submittedToAcceptingProposer' | 'psliceAvailable' | 'leaderAttemptsExclusion') => (e: React.ChangeEvent<HTMLInputElement>) =>
     setS((x) => ({ ...x, [k]: e.target.checked }))
@@ -123,6 +126,7 @@ export function NetworkTab({
           })}
         </p>
       </div>
+      {!mockMode && <p className="notice caption">{t('ui.sim.network.researchRules')}</p>}
       {mockMode && <p className="notice caption">{t('ui.sim.network.mockOnly')}</p>}
 
       {!mockMode && (
@@ -171,6 +175,10 @@ export function NetworkTab({
               <div className="field">
                 <label htmlFor="sim-a">{t('ui.sim.network.attestation')}</label>
                 <input id="sim-a" className="input" type="number" min={0} max={100} step={0.01} value={Number.isNaN(s.attestationPercent) ? '' : s.attestationPercent} onChange={num('attestationPercent')} />
+              </div>
+              <div className="field">
+                <label htmlFor="sim-participation">{t('ui.sim.network.participation')}</label>
+                <input id="sim-participation" className="input" type="number" min={0} max={100} step={0.01} value={s.attesterParticipationPercent === undefined || Number.isNaN(s.attesterParticipationPercent) ? '' : s.attesterParticipationPercent} onChange={num('attesterParticipationPercent')} />
               </div>
               <label className="check">
                 <input type="checkbox" checked={s.submittedToAcceptingProposer} onChange={flag('submittedToAcceptingProposer')} /> {t('ui.sim.network.submitted')}
@@ -263,7 +271,7 @@ export function NetworkTab({
                   ))}
                 </svg>
                 <div className="legend caption t2">
-                  {(['INCLUSION_ENFORCED', 'INCLUSION_NOT_ENFORCED', 'NO_SUBMISSION_PATH', 'INVALID_SCENARIO'] as const).map((o) => (
+                  {(['INCLUSION_ENFORCED', 'INCLUSION_NOT_ENFORCED', 'NO_SUBMISSION_PATH', 'INVALID_SCENARIO', 'BLOCK_SKIPPED'] as const).map((o) => (
                     <span key={o}>
                       <i className={`lg-swatch sw-${o.toLowerCase()}`} /> {copy.networkOutcome(o)}
                     </span>

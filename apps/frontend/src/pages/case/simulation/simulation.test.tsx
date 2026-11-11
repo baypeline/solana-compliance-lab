@@ -112,13 +112,15 @@ describe('simulation dialog', () => {
 })
 
 describe('simulation dialog against a Backend', () => {
-  // A stand-in for the simulator: enforced at 66.67% attestation or more, like the draft model in baypeline's Backend.
+  // A stand-in for the simulator: returns separate research and single-leader results; the server owns both rules.
   function simulator(calls: ConstellationRequest[], failing = { on: false }) {
     return http.post('*/api/v1/experiments/constellation', async ({ request }) => {
       const body = (await request.json()) as ConstellationRequest
       calls.push(body)
       if (failing.on) return HttpResponse.json({ error: { code: 'INTERNAL_ERROR', message: 'boom', retryable: false }, requestId: 'r-1' }, { status: 500 })
-      const met = body.scenario.attestationPercent >= 66.67
+      const baseline = body.protocolModelVersion.endsWith('single-leader')
+      const skipped = !baseline && (body.scenario.attesterParticipationPercent ?? 100) < 60
+      const met = !baseline && !skipped && body.scenario.attestationPercent >= 40
       return HttpResponse.json({
         schemaVersion: '0.1.0',
         simulationId: `sim-${calls.length}`,
@@ -126,9 +128,11 @@ describe('simulation dialog against a Backend', () => {
         protocolModelVersion: body.protocolModelVersion,
         proposerPathAvailable: true,
         psliceInclusionEnforced: met,
-        leaderExclusionValid: !met,
-        outcome: met ? 'INCLUSION_ENFORCED' : 'INCLUSION_NOT_ENFORCED',
-        explanationCodes: met ? ['ATTESTATION_CONDITION_MET', 'LEADER_EXCLUSION_INVALID'] : ['ATTESTATION_CONDITION_NOT_MET', 'LEADER_EXCLUSION_VALID'],
+        leaderExclusionValid: skipped ? null : !met,
+        blockStatus: baseline ? 'NOT_EVALUATED' : skipped ? 'SKIPPED' : met ? 'INVALID_LEADER_EXCLUSION' : 'VALID',
+        ...(!baseline ? { modelParameters: { sourceId: 'team-research-40-60-v1', psliceInclusionThresholdPercent: 40, blockParticipationThresholdPercent: 60 } } : {}),
+        outcome: skipped ? 'BLOCK_SKIPPED' : met ? 'INCLUSION_ENFORCED' : 'INCLUSION_NOT_ENFORCED',
+        explanationCodes: skipped ? ['BLOCK_PARTICIPATION_BELOW_THRESHOLD'] : met ? ['ATTESTATION_CONDITION_MET', 'LEADER_EXCLUSION_INVALID'] : ['ATTESTATION_CONDITION_NOT_MET', 'LEADER_EXCLUSION_VALID'],
         simulationOnly: true,
       })
     })
@@ -146,7 +150,7 @@ describe('simulation dialog against a Backend', () => {
     const calls: ConstellationRequest[] = []
     const { dialog } = await openNetwork(calls)
     expect(await within(dialog).findByText('The leader must include it.')).toBeTruthy()
-    expect(calls.map((c) => c.scenario.attestationPercent)).toEqual([100])
+    expect(calls.map((c) => c.scenario.attestationPercent)).toEqual([100, 100])
     expect(dialog.querySelectorAll('.batch-attested').length).toBeGreaterThan(0)
   })
 
@@ -155,7 +159,7 @@ describe('simulation dialog against a Backend', () => {
     const { dialog } = await openNetwork(calls)
     await within(dialog).findByText('The leader must include it.')
     fireEvent.click(within(dialog).getByRole('button', { name: 'Low attestation (30%)' }))
-    expect(await within(dialog).findByText('Nothing forces the leader to include it.')).toBeTruthy()
+    expect((await within(dialog).findAllByText('Nothing forces the leader to include it.')).length).toBeGreaterThan(0)
     expect(calls.at(-1)?.scenario.attestationPercent).toBe(30)
     expect(within(dialog).getByRole('button', { name: 'Low attestation (30%)' }).getAttribute('aria-pressed')).toBe('true')
   })
@@ -171,4 +175,16 @@ describe('simulation dialog against a Backend', () => {
     expect(within(dialog).getAllByRole('alert')).toHaveLength(1)
     expect(within(dialog).getByText('The leader must include it.')).toBeTruthy()
   })
+  it('sends both exact thresholds and distinguishes an insufficient-participation block skip', async () => {
+    const calls: ConstellationRequest[] = []
+    const { dialog } = await openNetwork(calls)
+    await within(dialog).findByText('The leader must include it.')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Exact thresholds (40% / 60%)' }))
+    await waitFor(() => expect(calls.at(-1)?.scenario).toMatchObject({ attestationPercent: 40, attesterParticipationPercent: 60 }))
+    await within(dialog).findAllByText('Target pslice: 40% · Aggregate participation: 60%.')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Insufficient participation (59.99%)' }))
+    expect(await within(dialog).findByText('The block is skipped; this is not a selective transaction block.')).toBeTruthy()
+    expect(calls.at(-1)?.scenario.attesterParticipationPercent).toBe(59.99)
+  })
+
 })

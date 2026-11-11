@@ -44,7 +44,7 @@ export function backendLabel(): string {
 
 /**
  * Constellation model versions to offer. The Public API has no list endpoint, so they come from
- * the contract's approved list, then VITE_CONSTELLATION_MODELS, then the mock version.
+ * the contract's team research list and VITE_CONSTELLATION_MODELS. Mock mode explicitly selects its placeholder.
  */
 export const constellationModelOptions: string[] = Array.from(
   new Set([
@@ -53,7 +53,6 @@ export const constellationModelOptions: string[] = Array.from(
       .split(',')
       .map((s: string) => s.trim())
       .filter(Boolean),
-    protocolModels.mockVersion,
   ]),
 )
 

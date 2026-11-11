@@ -88,13 +88,13 @@ intentId·decision.intentId는 일치해야 합니다. 실제 전송이 아니�
 
 ## Constellation
 
-요청·응답 형태만 고정합니다. 현재 승인된 protocolModelVersion은 없습니다. 실제 구현에서는 미등록 모델에 422 UNSUPPORTED_VERSION을 반환하며 mockVersion으로 실제 판정을 실행하지 않습니다.
+실행 모델은 `0.2.0-research`와 `0.2.0-single-leader`입니다. 팀 리서치의 출처·가정·판정 순서는 [연구 모델 명세](research/constellation-40-60.md)에 고정합니다. 공식 네트워크 승인을 뜻하지 않습니다.
 
-리서치 승인 전에 attestationPercent 임계값, pslice 가용성·증명 조건과 포함 강제의 관계, 리더 제외의 유효성, 단일 리더 비교 규칙을 코드로 임의 확정하지 않습니다. 승인 시 출처·파라미터·버전·검증 시나리오를 함께 등록합니다.
+새 모델은 대상 묶음 증명률 `attestationPercent`와 전체 증명 참여율 `attesterParticipationPercent`를 모두 요구합니다. 묶음은 40% 이상에서 포함 의무가 생기고 전체 참여율 60% 미만에서는 블록을 건너뜁니다. 대상 묶음 증명률이 전체 참여율보다 크면 INVALID_SCENARIO입니다. BLOCK_SKIPPED는 특정 거래의 선택적 차단과 구분합니다.
 
-attestationPercent는 0~100 범위입니다. 음수·잘못된 타입 등 구조 오류는 400입니다. 거절 제안자 수가 전체보다 큰 등 구조상 유효하나 모순된 조건은 INVALID_SCENARIO 결과로 표현합니다. 해당 결과에서는 경로·포함 강제 false, leaderExclusionValid: null입니다. 제외 시도 자체가 없으면 leaderExclusionValid: null입니다. simulationOnly는 항상 true입니다.
+결과의 blockStatus는 VALID / SKIPPED / INVALID_LEADER_EXCLUSION / NOT_EVALUATED입니다. 연구 모델은 modelParameters에 sourceId와 40·60 기준을 반환합니다. 리더 제외 시도가 없거나 블록이 건너뛰어졌으면 leaderExclusionValid는 null입니다. 포함 강제는 거래 실행 성공을 보장하지 않으며 simulationOnly는 항상 true입니다.
 
-현재 mock Fixture는 시각화 계약용입니다. 포함 확률·제재 우회 성공률·메인넷 거래 성공을 계산하거나 보장하지 않습니다.
+0.1.0 모델의 저장된 결과와 전체 참여율이 없는 과거 시나리오는 읽기 호환성을 유지합니다. 새 실행에서는 과거 버전을 사용하거나 누락된 비율을 추정하지 않습니다.
 
 ## 오류
 

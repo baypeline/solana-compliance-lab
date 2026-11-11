@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
  * </ol>
  *
  * <p>attestationPercent 임계값, pslice 가용성과 포함 강제의 관계, 리더 제외 유효성,
- * 단일 리더 비교 규칙은 리서치 승인 전이므로 이 클래스에서 확정하지 않는다.
+ * 단일 리더 비교 규칙은 버전별 모델에 위임한다. 새 연구 버전은 출처와 고정 기준도 반환한다.
  */
 @Component
 public class ConstellationSimulator {
@@ -41,7 +41,8 @@ public class ConstellationSimulator {
     static final Set<String> EXPLANATIONS = Set.of("NO_ACCEPTING_PROPOSER", "NOT_SUBMITTED_TO_ACCEPTING_PROPOSER",
             "PSLICE_UNAVAILABLE", "ATTESTATION_CONDITION_NOT_MET", "ATTESTATION_CONDITION_MET",
             "LEADER_EXCLUSION_VALID", "LEADER_EXCLUSION_INVALID", "NO_EXCLUSION_ATTEMPT",
-            "REJECTING_COUNT_EXCEEDS_TOTAL", "CONTRADICTORY_SUBMISSION_PATH", MockDisplayModel.EXPLANATION);
+            "REJECTING_COUNT_EXCEEDS_TOTAL", "CONTRADICTORY_SUBMISSION_PATH", MockDisplayModel.EXPLANATION, "BLOCK_PARTICIPATION_BELOW_THRESHOLD", "BLOCK_PARTICIPATION_THRESHOLD_MET",
+            "PSLICE_ATTESTATION_EXCEEDS_PARTICIPATION", "REQUIRED_PSLICE_UNAVAILABLE");
 
     private final Map<String, ProtocolModel> models;
 
@@ -75,10 +76,17 @@ public class ConstellationSimulator {
 
         ProtocolModel model = models.get(version);
         if (model == null) {
-            throw ApiException.unsupportedVersion("protocolModelVersion " + version + " is not approved");
+            throw ApiException.unsupportedVersion("protocolModelVersion " + version + " is not registered");
         }
 
+        boolean research = version.startsWith("0.2.0-");
+        if (research && scenario.attesterParticipationPercent() == null) {
+            throw ApiException.contract("scenario.attesterParticipationPercent is required for this model");
+        }
         Judgement judgement = contradiction(scenario);
+        if (judgement == null && research && scenario.attestationPercent().compareTo(scenario.attesterParticipationPercent()) > 0) {
+            judgement = new Judgement(false, false, null, "INVALID_SCENARIO", List.of("PSLICE_ATTESTATION_EXCEEDS_PARTICIPATION"));
+        }
         if (judgement == null) {
             judgement = model.judge(scenario);
         }
@@ -109,6 +117,15 @@ public class ConstellationSimulator {
         result.put("outcome", judgement.outcome());
         ArrayNode codes = result.putArray("explanationCodes");
         judgement.explanationCodes().forEach(codes::add);
+        if (research) {
+            String blockStatus = "INVALID_SCENARIO".equals(judgement.outcome()) || version.endsWith("single-leader")
+                    ? "NOT_EVALUATED" : "BLOCK_SKIPPED".equals(judgement.outcome()) ? "SKIPPED"
+                    : Boolean.FALSE.equals(judgement.leaderExclusionValid()) ? "INVALID_LEADER_EXCLUSION" : "VALID";
+            result.put("blockStatus", blockStatus);
+            if ("0.2.0-research".equals(version)) result.putObject("modelParameters")
+                    .put("sourceId", "team-research-40-60-v1").put("psliceInclusionThresholdPercent", 40)
+                    .put("blockParticipationThresholdPercent", 60);
+        }
         result.put("simulationOnly", true);
         return result;
     }

@@ -1,50 +1,14 @@
 # Constellation Simulator
 
-제안된 Constellation 프로토콜의 거래 포함 규칙을 버전별 모델로 시뮬레이션하고, 기존 단일 리더 모델과 비교합니다. (포트 8004)
-`POST /internal/v1/constellation/simulate`: ConstellationSimulationRequest → ConstellationSimulationResult
+팀 리서치의 40%·60% 조건을 검증하는 결정론적 오프체인 모델입니다. [공통 모델 명세](../../contracts/research/constellation-40-60.md)를 기준으로 입력·결과·버전을 관리합니다.
 
-## 처리 순서
+- `0.2.0-research`: 대상 묶음 증명률 `attestationPercent` 40%와 전체 증명 참여율 `attesterParticipationPercent` 60%를 별도로 판단합니다.
+- `0.2.0-single-leader`: 같은 거래 조건에서 리더의 선택적 제외 재량만 비교합니다. Constellation의 증명 규칙을 적용하지 않습니다.
+- `0.0.0-research-pending`: Mock 설정을 켠 개발 환경에서만 화면 확인용 고정 결과를 반환합니다.
+- `0.1.0-*`: 과거 기록 조회용입니다. 새 실행은 422로 거부합니다.
 
-1. 구조 검증: attestationPercent 0~100, 음수·타입 오류 → 400
-2. `protocolModelVersion`이 등록되지 않은 버전이면 → 422 `UNSUPPORTED_VERSION`
-3. 정의상 모순된 시나리오 → `INVALID_SCENARIO` (`REJECTING_COUNT_EXCEEDS_TOTAL`, `CONTRADICTORY_SUBMISSION_PATH`)
-4. 선택한 모델로 판정. 같은 시나리오는 같은 결과(`simulationId` 포함)를 냅니다.
+전체 참여율 부족은 `BLOCK_SKIPPED`이며 특정 거래만 차단했다는 뜻이 아닙니다. 리더가 필수 묶음을 제외하면 블록 상태는 `INVALID_LEADER_EXCLUSION`입니다. 필수 묶음의 데이터가 없으면 포함 의무를 보존한 채 블록을 건너뛰는 것으로 모델링합니다. 자세한 가정과 판정 순서는 공통 명세에 있습니다.
 
-## 모델
+임계값과 모델 버전은 코드에 고정되어 있으며 환경 변수로 동일 버전의 의미를 바꿀 수 없습니다. `modelParameters`에 적용한 출처·기준을 반환합니다. 실제 거래 전송·지분 추첨·지연·MEV·증명의 암호학적 검증은 수행하지 않습니다.
 
-### `0.1.0-draft` — Constellation 규칙 초안
-
-| 단계 | 조건 | 결과 |
-| --- | --- | --- |
-| 제안자 경로 | 수락 제안자 0명 | `NO_SUBMISSION_PATH` / `NO_ACCEPTING_PROPOSER` |
-| | 수락 제안자에게 미제출 | `NO_SUBMISSION_PATH` / `NOT_SUBMITTED_TO_ACCEPTING_PROPOSER` |
-| pslice 가용성 | pslice 불가 | 포함 강제 안 됨 / `PSLICE_UNAVAILABLE` |
-| 증명 조건 | attestationPercent ≥ 임계값(기본 66.67) | 포함 강제 / `ATTESTATION_CONDITION_MET` |
-| | 미만 | 포함 강제 안 됨 / `ATTESTATION_CONDITION_NOT_MET` |
-| 리더 제외 | 시도 없음 | `leaderExclusionValid: null` / `NO_EXCLUSION_ATTEMPT` |
-| | 포함 강제된 pslice 제외 시도 | `false` / `LEADER_EXCLUSION_INVALID` |
-| | 강제되지 않은 pslice 제외 시도 | `true` / `LEADER_EXCLUSION_VALID` |
-
-결과: 포함 강제 → `INCLUSION_ENFORCED`, 아니면 `INCLUSION_NOT_ENFORCED`. 제출 경로가 없으면 제외할 대상이 없으므로 `leaderExclusionValid: null`입니다.
-
-### `0.1.0-single-leader` — 비교 기준
-
-리더 한 명이 블록 구성을 결정하고 pslice·증명에 의한 포함 강제 장치가 없습니다.
-
-- 제출 경로 판정은 초안 모델과 같습니다.
-- 경로가 있으면 항상 `INCLUSION_NOT_ENFORCED`이고, 리더의 제외 시도는 항상 유효(`LEADER_EXCLUSION_VALID`)입니다.
-
-예: 4명 중 1명 거절, 수락 제안자에게 제출, pslice 가용, 증명 100%, 리더 제외 시도인 경우
-- `0.1.0-draft` → `INCLUSION_ENFORCED`, 제외 무효
-- `0.1.0-single-leader` → `INCLUSION_NOT_ENFORCED`, 제외 유효
-
-## 주의
-
-- 초안 규칙과 임계값은 팀 초안이며 리서치팀 공식 확정 전입니다. 확정되면 설정값을 바꾸거나 새 `ProtocolModel` 버전을 Bean으로 추가합니다.
-- `CONSTELLATION_MOCK_ENABLED=true`이면 mock 버전(`0.0.0-research-pending`)에 화면 확인용 고정 결과를 반환합니다(`MOCK_RESULT_NOT_PROTOCOL_VALIDATED`).
-- 포함 확률이나 제재 우회 성공률은 계산하지 않습니다(`simulationOnly: true`).
-
-```bash
-./mvnw -pl simulations/constellation spring-boot:run
-./mvnw -pl simulations/constellation test
-```
+실행은 루트 개발·운영 Compose를 사용하며, Java 모듈 테스트는 `mvn -pl simulations/constellation test`로 실행합니다.

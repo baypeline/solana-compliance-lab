@@ -633,6 +633,66 @@
     {
       "path": "api/case-deleted.json",
       "schema": "../schemas/api.schema.json#/$defs/CaseDeleted"
+    },
+    {
+      "path": "constellation/research-boundary-public-request.json",
+      "schema": "../schemas/api.schema.json#/$defs/ConstellationRequest"
+    },
+    {
+      "path": "constellation/research-boundary-request.json",
+      "schema": "../schemas/experiment.schema.json#/$defs/ConstellationSimulationRequest"
+    },
+    {
+      "path": "constellation/research-boundary-result.json",
+      "schema": "../schemas/experiment.schema.json#/$defs/ConstellationSimulationResult"
+    },
+    {
+      "path": "constellation/research-below-inclusion-public-request.json",
+      "schema": "../schemas/api.schema.json#/$defs/ConstellationRequest"
+    },
+    {
+      "path": "constellation/research-below-inclusion-request.json",
+      "schema": "../schemas/experiment.schema.json#/$defs/ConstellationSimulationRequest"
+    },
+    {
+      "path": "constellation/research-below-inclusion-result.json",
+      "schema": "../schemas/experiment.schema.json#/$defs/ConstellationSimulationResult"
+    },
+    {
+      "path": "constellation/research-below-participation-public-request.json",
+      "schema": "../schemas/api.schema.json#/$defs/ConstellationRequest"
+    },
+    {
+      "path": "constellation/research-below-participation-request.json",
+      "schema": "../schemas/experiment.schema.json#/$defs/ConstellationSimulationRequest"
+    },
+    {
+      "path": "constellation/research-below-participation-result.json",
+      "schema": "../schemas/experiment.schema.json#/$defs/ConstellationSimulationResult"
+    },
+    {
+      "path": "constellation/research-fifty-percent-public-request.json",
+      "schema": "../schemas/api.schema.json#/$defs/ConstellationRequest"
+    },
+    {
+      "path": "constellation/research-fifty-percent-request.json",
+      "schema": "../schemas/experiment.schema.json#/$defs/ConstellationSimulationRequest"
+    },
+    {
+      "path": "constellation/research-fifty-percent-result.json",
+      "schema": "../schemas/experiment.schema.json#/$defs/ConstellationSimulationResult"
+    },
+    {
+      "path": "constellation/research-inconsistent-public-request.json",
+      "schema": "../schemas/api.schema.json#/$defs/ConstellationRequest"
+    },
+    {
+      "path": "constellation/research-inconsistent-request.json",
+      "schema": "../schemas/experiment.schema.json#/$defs/ConstellationSimulationRequest"
+    },
+    {
+      "path": "constellation/research-inconsistent-result.json",
+      "schema": "../schemas/experiment.schema.json#/$defs/ConstellationSimulationResult"
     }
   ]
 }

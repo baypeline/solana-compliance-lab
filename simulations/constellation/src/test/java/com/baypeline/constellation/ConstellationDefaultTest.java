@@ -60,7 +60,7 @@ class ConstellationDefaultTest {
         mvc.perform(get("/health"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.supportedProtocolModelVersions.length()").value(2))
-                .andExpect(jsonPath("$.supportedProtocolModelVersions[0]").value("0.1.0-draft"))
-                .andExpect(jsonPath("$.supportedProtocolModelVersions[1]").value("0.1.0-single-leader"));
+                .andExpect(jsonPath("$.supportedProtocolModelVersions[0]").value("0.2.0-research"))
+                .andExpect(jsonPath("$.supportedProtocolModelVersions[1]").value("0.2.0-single-leader"));
     }
 }

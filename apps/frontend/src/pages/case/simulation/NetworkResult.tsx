@@ -31,7 +31,7 @@ function ProposerDiagram({ s, result }: { s: ConstellationScenario; result: Cons
   const reached = result.outcome === 'INCLUSION_ENFORCED' || result.outcome === 'INCLUSION_NOT_ENFORCED'
 
   return (
-    <svg className={`net-diagram net-${result.outcome.toLowerCase()}`} viewBox={`0 0 360 ${H}`} role="img" aria-label={t('ui.sim.network.diagramAnswer', { n: s.proposerCount, k: s.rejectingProposerCount })}>
+    <svg className={`net-diagram net-${result.outcome.toLowerCase()} ${result.blockStatus === 'INVALID_LEADER_EXCLUSION' ? 'net-invalid-block' : ''}`} viewBox={`0 0 360 ${H}`} role="img" aria-label={t('ui.sim.network.diagramAnswer', { n: s.proposerCount, k: s.rejectingProposerCount })}>
       {[
         [43, 'ui.sim.network.diagramTx'],
         [176, 'ui.sim.network.diagramProposers'],
@@ -48,7 +48,7 @@ function ProposerDiagram({ s, result }: { s: ConstellationScenario; result: Cons
           <g key={i}>
             <line x1="72" y1={mid} x2="160" y2={y} stroke="var(--hairline)" />
             {i === target && path && <path className="draw d1" pathLength={1} d={`M72 ${mid} L160 ${y}`} stroke="var(--accent)" strokeWidth="2.5" fill="none" />}
-            {!rej && batches === 'attested' && <path className="draw d2 batch-attested" pathLength={1} d={`M190 ${y} L276 ${mid}`} stroke="rgb(18 154 240 / 0.7)" strokeWidth="1.5" fill="none" />}
+            {!rej && batches === 'attested' && reached && <path className="draw d2 batch-attested" pathLength={1} d={`M190 ${y} L276 ${mid}`} stroke="rgb(18 154 240 / 0.7)" strokeWidth="1.5" fill="none" />}
             {!rej && batches === 'unattested' && <line className="batch-unattested" x1="190" y1={y} x2="276" y2={mid} stroke="var(--muted)" strokeDasharray="3 4" />}
             {/* no attestation step in this model: the transfer simply goes on to the leader */}
             {i === target && path && reached && batches === null && <path className="draw d2 to-leader" pathLength={1} d={`M190 ${y} L276 ${mid}`} stroke="var(--accent)" strokeWidth="1.5" fill="none" />}
@@ -63,7 +63,7 @@ function ProposerDiagram({ s, result }: { s: ConstellationScenario; result: Cons
       <g className="net-leader d3">
         <circle cx="300" cy={mid} r="22" fill="none" strokeWidth="2.5" />
         <text x="300" y={mid + 5} textAnchor="middle">
-          {result.outcome === 'INCLUSION_ENFORCED' ? '✓' : result.outcome === 'INCLUSION_NOT_ENFORCED' ? '?' : '–'}
+          {result.blockStatus === 'INVALID_LEADER_EXCLUSION' ? '✕' : result.outcome === 'INCLUSION_ENFORCED' ? '✓' : result.outcome === 'INCLUSION_NOT_ENFORCED' ? '?' : '–'}
         </text>
       </g>
     </svg>
@@ -81,6 +81,10 @@ export function ResultCard({ rec, animated }: { rec: ConstellationSimRecord; ani
       {/* a placeholder result says nothing about the scenario, so it gets no picture */}
       {!mock && <ProposerDiagram s={rec.scenario} result={rec.result} />}
       {!mock && rec.scenario.proposerCount > MAX_DRAWN && <span className="caption muted">{t('ui.sim.network.diagramClamped', { shown: MAX_DRAWN, n: rec.scenario.proposerCount })}</span>}
+      {rec.result.blockStatus && <p className="caption">{t(`ui.sim.network.blockStatus.${rec.result.blockStatus}`)}</p>}
+      {rec.result.modelParameters && <p className="caption muted">{t('ui.sim.network.appliedRules', { inclusion: rec.result.modelParameters.psliceInclusionThresholdPercent, participation: rec.result.modelParameters.blockParticipationThresholdPercent })}</p>}
+      {rec.scenario.attesterParticipationPercent !== undefined && <p className="caption">{t('ui.sim.network.inputSummary', { pslice: rec.scenario.attestationPercent, participation: rec.scenario.attesterParticipationPercent })}</p>}
+      {rec.version.startsWith('0.1.0-') && <p className="notice caption">{t('ui.sim.network.legacy')}</p>}
       <strong className="sim-outcome">{copy.networkOutcome(rec.result.outcome)}</strong>
       {mock && <p className="notice notice-warn caption">{t('ui.sim.network.mockWarning')}</p>}
       <ul className="plain-list caption t2">

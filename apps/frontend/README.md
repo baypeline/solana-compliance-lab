@@ -126,7 +126,7 @@ Mock은 Backend를 대신하는 시연용이며 계산하지 않습니다. 계�
 - 분석: 조회할 때마다 QUEUED → RUNNING → 결과 순서로 진행합니다. LIVE는 Collector가 없어 FAILED로 끝납니다. Fixture 주소와 요청 주소가 다르면 FAILED입니다.
 - 정책 심사: Fixture에 있는 조합(송신자 `sender` × 각 수신자 시나리오, 해당 정책 버전)만 응답합니다. 다른 조합은 `[Mock]` 표시가 붙은 409로 알려줍니다.
 - Gateway: `contracts/semantics.md`의 결정 표에 맞춰 만들어 둔 `fixtures/gateway/*-result.json`을 고릅니다.
-- Constellation: 승인된 모델이 없으므로 mock 버전(`0.0.0-research-pending`)에만 고정 결과를 돌려주고, 다른 버전은 422입니다. 이 결과는 입력과 무관한 화면 확인용이라 Mock 모드에서는 증명 비율 sweep을 숨깁니다.
+- Constellation: 독립적인 화면 시연을 위해 mock 버전(`0.0.0-research-pending`)에만 고정 결과를 돌려주고, 다른 버전은 422입니다. 이 결과는 입력과 무관한 화면 확인용이라 Mock 모드에서는 증명 비율 sweep을 숨깁니다.
 
 ## 구조
 
@@ -166,7 +166,7 @@ Mock 흐름 테스트는 실제 API 클라이언트로 Mock을 호출합니다. 
 | 3 | KYT 위험 신호·근거 시각화 | 완료 | 케이스 화면의 Evidence(한 일 문장, 근거 거래, 자금 흐름 그림), Wallet analysis(규칙), Transfers(타임라인) |
 | 4 | 거래 전 정책 판단 화면 | 완료 | 케이스 화면 판정 헤더와 Evidence. Block·Warn·Review·Allow를 Mock으로, Block 세 사례를 로컬 Backend로 확인 |
 | 5 | Gateway 실험 결과 비교 | 완료 | 시뮬레이션 다이얼로그의 Another route. Mock과 로컬 Backend에서 확인 |
-| 6 | Constellation 시뮬레이션 화면 | **OPEN** | 시뮬레이션 다이얼로그의 On the network. 로컬 Backend의 Simulator로 `0.1.0-draft`와 `0.1.0-single-leader`를 시나리오 3개로 비교, 증명 비율 sweep까지 확인(2026-11-11). 공통 계약에 승인 모델이 아직 없고(`protocol-models.json`의 `approvedVersions`가 비어 있음), 아래 용어 설명이 Simulator 담당 확인 전이라 OPEN |
+| 6 | Constellation 시뮬레이션 화면 | 팀 연구 모델 반영 | `0.2.0-research`와 단일 리더 비교, 묶음 증명률 40%·전체 참여율 60% 입력, 블록 건너뛰기·제외 무효 표시 및 과거 기록 구분. 공식 네트워크 검증과 정량 지연 분석은 범위 밖 |
 | 7 | 오류 및 부분 분석 상태 표시 | 완료 | 새 케이스 진행 화면과 케이스 화면. FAILED·PARTIAL·409·422·계약 위반·연결 실패·시간 초과·Backend 재시작 표시 확인 |
 | 8 | Mock API로 독립적인 시연 가능 | 완료 | `pnpm dev`만으로 로그인부터 시뮬레이션까지 오프라인 확인 |
 
@@ -191,3 +191,5 @@ Notion 04의 "2. 화면별 구성"(Screen A~D)은 위 화면 구조에 맞게 He
 한국어와 영어를 지원합니다. 첫 접속 시 브라우저의 선호 언어 중 지원하는 언어를 선택하며, 로그인 화면과 상단 언어 선택에서 즉시 변경할 수 있습니다. 선택은 `scl.locale.v1`에 저장되어 새로고침 후에도 유지됩니다. 언어 변경은 화면을 다시 불러오거나 실행 중인 분석을 중단하지 않습니다.
 
 `src/i18n/en.ts`와 `ko.ts`가 같은 키 구조를 사용하며, 누락된 번역과 보간 변수 차이는 타입 검사·테스트로 확인합니다. 분석·정책·실험·오류·저장 안내와 시나리오 이름을 번역합니다. 지갑 주소, 자산 코드, 버전, 원본 API 응답은 유지하고 시각은 기존처럼 UTC로 표시합니다. 원본 오류 메시지는 기술 상세에서 확인합니다.
+
+Constellation 화면은 대상 묶음 증명률과 전체 증명 참여율을 나누어 입력하고 40%·60% 경계값, 전체 참여율 미달, 제출 경로를 비교합니다. 블록 건너뛰기와 리더의 무효한 제외를 별도로 표시하며, 과거 0.1.0 모델 기록에는 과거 결과임을 안내합니다.

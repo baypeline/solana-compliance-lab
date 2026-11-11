@@ -28,7 +28,7 @@
 | `schemas/experiment.schema.json` | Gateway·Constellation 요청·응답 |
 | `schemas/api.schema.json` | Public 요청, 분석 조회·전송 페이지·심사 응답 |
 | `config/rulesets/`, `config/policies/` | 버전으로 고정한 데모 규칙·정책 |
-| `config/protocol-models.json` | 리서치 승인 모델 목록: 현재 없음 |
+| `config/protocol-models.json` | 팀 연구 모델 버전과 출처 ID 목록 |
 | `fixtures/manifest.json` | 모든 Mock JSON과 스키마 연결 |
 | `semantics.md` | 런타임 제약, 위험 점수·정책·상태 의미 |
 | `runtime.py`, `validate.py` | 구조·의미·참조·거부 사례 검증 |
@@ -109,3 +109,5 @@ python -m venv contracts/.venv
 macOS/Linux는 실행 파일 경로를 `contracts/.venv/bin/python`으로 바꿉니다. 스키마·OpenAPI·전체 Fixture·예시 참조·시나리오 연결·잘못된 입력 거부를 검사합니다. 서비스 구현이나 실제 프로토콜을 실행하는 검증은 아닙니다.
 
 필수 필드·타입·Enum·의미·상태·오류 변경은 제공자·소비자 협의 후 스키마·OpenAPI·Fixture·문서·테스트를 함께 수정합니다.
+
+Constellation의 현재 팀 연구 모델은 [40%·60% 명세](research/constellation-40-60.md)에 고정합니다. 새 요청은 묶음별 증명률과 전체 참여율을 모두 제공하며, 과거 기록의 필드와 결과를 새 규칙으로 재해석하지 않습니다.
