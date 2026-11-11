@@ -1,6 +1,28 @@
 # Standalone configuration: docker compose --env-file .env.prod -f compose.prod.yaml up --build -d
 name: solana-compliance-lab-prod
 services:
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      target: runtime
+      args:
+        VITE_CONSTELLATION_MODELS: ${VITE_CONSTELLATION_MODELS:-0.1.0-draft,0.1.0-single-leader}
+    ports:
+    - ${FRONTEND_BIND_ADDRESS:-127.0.0.1}:${FRONTEND_PORT:-5173}:8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/healthz]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+    - /tmp
   collector:
     build:
       context: .

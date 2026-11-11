@@ -1,6 +1,35 @@
 # Standalone configuration: docker compose -f compose.dev.yaml up --build -d
 name: solana-compliance-lab-dev
 services:
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      target: development
+    environment:
+      VITE_API_MODE: backend
+      VITE_API_BASE_URL: ""
+      VITE_BACKEND_URL: http://backend:8080
+      VITE_DEMO_FIXTURES: 'off'
+      VITE_CONSTELLATION_MODELS: ${VITE_CONSTELLATION_MODELS:-0.1.0-draft,0.1.0-single-leader}
+    ports:
+    - 127.0.0.1:${FRONTEND_PORT:-5173}:5173
+    volumes:
+    - ./apps/frontend/src:/workspace/apps/frontend/src:ro
+    - ./apps/frontend/public:/workspace/apps/frontend/public:ro
+    - ./apps/frontend/demo:/workspace/apps/frontend/demo:ro
+    - ./apps/frontend/index.html:/workspace/apps/frontend/index.html:ro
+    - ./apps/frontend/vite.config.ts:/workspace/apps/frontend/vite.config.ts:ro
+    - ./contracts:/workspace/contracts:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:5173/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
   collector:
     build:
       context: .

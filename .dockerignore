@@ -3,6 +3,9 @@
 .env
 .env.*
 !.env.*.example
+**/.env
+**/.env.*
+!**/.env.*.example
 .run
 **/__pycache__
 **/*.py[cod]
@@ -10,6 +13,7 @@
 **/*.egg-info
 **/target
 **/node_modules
+**/dist
 **/*.log
 .idea
 .vscode

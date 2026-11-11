@@ -2,12 +2,13 @@
 
 실제 Solana 데이터의 위험 신호 탐지와 서비스 제출 경로의 컴플라이언스 통제 범위를 검증하는 오프체인 PoC입니다. 실제 거래 전송이나 스마트 컨트랙트 배포는 수행하지 않습니다.
 
-현재 **Collector, KYT Detection Engine, Compliance Policy Engine, Backend API, Mock Gateway, Constellation Simulator**가 구현되어 있습니다. Frontend는 다른 담당자의 구현 영역이며, 공통 계약과 합성 Fixture로 독립 개발할 수 있습니다.
+현재 **Frontend, Collector, KYT Detection Engine, Compliance Policy Engine, Backend API, Mock Gateway, Constellation Simulator**가 구현되어 있습니다. 공통 계약과 Fixture로 모듈을 독립 개발·검증할 수 있습니다.
 
 ## 모듈 구성
 
 | 모듈 | 경로 | 포트 | 역할 |
 | --- | --- | --- | --- |
+| Frontend | `apps/frontend/` | 5173 | React·Vite 화면 및 Backend Public API 연결 |
 | Backend API & Orchestrator | `apps/backend/` | 8080 | 분석 작업 상태 관리, 정책 심사 및 실험 API, 내부 모듈 호출 |
 | Collector | `services/collector/` | 8000 | 온디맨드 거래 수집·정규화. LIVE(Solana RPC)와 FIXTURE(실제 메인넷·합성) 모드 |
 | KYT Detection Engine | `services/kyt-engine/` | 8001 | 위험 신호 탐지 및 평가 |
@@ -40,6 +41,8 @@ docker compose -f compose.dev.yaml logs -f backend
 docker compose -f compose.dev.yaml down
 ```
 
+Frontend는 `http://localhost:5173`에서 열립니다. Vite 개발 서버가 컨테이너 내부 Backend로 `/api` 요청을 프록시하며, FE 소스 변경은 HMR로 반영됩니다. FE는 Backend 모드로 실행하고 Collector에 없는 FE 전용 데모 fixture는 숨깁니다.
+
 Backend(`http://localhost:8080`)와 내부 모듈(8000~8004)은 호스트의 루프백 주소로 노출됩니다. Collector는 compose 서비스로 실행되며 Backend는 `COLLECTOR_URL=http://collector:8000`으로 호출합니다. FIXTURE 모드는 API 키 없이 동작합니다. LIVE 모드를 쓰려면 저장소 루트의 `.env`에 `SOLANA_RPC_URL`과 `SOLANA_RPC_API_KEY`를 설정합니다(`.env.example` 참고). 화면 확인용 Constellation mock 버전도 활성화됩니다.
 
 Java는 컨테이너의 JDK·Maven으로 실행하며 Maven 다운로드는 볼륨에 캐시합니다. Python은 editable 설치를 사용합니다. 소스와 fixture는 읽기 전용으로 마운트되며, 코드 변경 후 해당 서비스를 `docker compose -f compose.dev.yaml restart backend`와 같이 재시작합니다. 자동 재시작은 제공하지 않습니다. 의존성·POM·Dockerfile 변경 시에는 `up --build -d`로 이미지를 다시 빌드합니다.
@@ -70,7 +73,11 @@ docker compose --env-file .env.prod -f compose.prod.yaml down
 
 운영에서는 Constellation mock 버전을 비활성화합니다. Collector는 compose 서비스로 실행되며 `COLLECTOR_URL`의 기본값(`http://collector:8000`)을 그대로 사용합니다. 외부 Collector를 쓸 때만 `.env.prod`에서 `COLLECTOR_URL`을 바꿉니다. LIVE 수집에는 `.env.prod`의 `SOLANA_RPC_URL`과 `SOLANA_RPC_API_KEY`가 필요합니다. 운영 Collector는 호스트 포트를 노출하지 않습니다.
 
-외부로 노출하는 포트는 Backend 하나이며 기본값은 `127.0.0.1:8080`입니다. 직접 외부에 노출해야 한다면 `.env.prod`에서 `BACKEND_BIND_ADDRESS=0.0.0.0`을 지정합니다. 내부 모듈은 Compose 네트워크의 서비스 이름으로 연결하며, Backend는 내부 모듈의 `/health`가 정상인 뒤 시작합니다. 개발 환경과 운영 환경은 같은 호스트 포트를 사용하므로 하나씩 실행합니다.
+운영 Frontend는 Nginx가 정적 빌드를 제공하며 기본 접속 주소는 `http://localhost:5173`입니다. `/api`는 내부 Backend로 프록시하고 SPA 경로의 직접 접속도 지원합니다. Node.js는 빌드 단계에서만 사용합니다.
+
+호스트에 노출하는 포트는 Frontend(`127.0.0.1:5173`)와 Backend(`127.0.0.1:8080`)입니다. `.env.prod`의 `FRONTEND_PORT`, `FRONTEND_BIND_ADDRESS`, `BACKEND_PORT`, `BACKEND_BIND_ADDRESS`로 변경할 수 있습니다. 직접 외부에 FE를 노출한다면 `FRONTEND_BIND_ADDRESS=0.0.0.0`을 지정합니다. 내부 모듈은 Compose 네트워크의 서비스 이름으로 연결하며, Backend는 내부 모듈의 `/health`가 정상인 뒤 시작합니다. 개발 환경과 운영 환경은 같은 호스트 포트를 사용하므로 하나씩 실행합니다.
+
+두 Compose 모두 `frontend` 서비스를 포함합니다. `VITE_CONSTELLATION_MODELS`는 Simulator의 등록 버전과 맞추며, 운영 FE의 빌드 설정을 변경하면 `docker compose --env-file .env.prod -f compose.prod.yaml up --build -d frontend`로 다시 빌드합니다. 개발 FE도 의존성 변경 시 이미지를 다시 빌드합니다.
 
 운영 구성에서도 분석·심사 기록은 메모리에 저장되어 재시작 시 사라집니다. Constellation 초안 모델의 리서치 승인 상태는 실행 환경과 무관합니다.
 
