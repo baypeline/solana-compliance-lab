@@ -5,7 +5,7 @@ import { CasesContext, type CasesValue } from './context'
 import { closeInterruptedRuns, type CaseRecord } from './model'
 import { createServerCaseStore } from './serverStore'
 import { createIdbCaseStore, validateCaseRecord, type CaseStore } from './store'
-import { exportCases, mergeImported, parseCaseExport } from './transfer'
+import { exportCases, mergeImported, parseCaseExport, type ImportErrorCode } from './transfer'
 
 const byNewest = (a: CaseRecord, b: CaseRecord) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : b.id.localeCompare(a.id))
 
@@ -88,11 +88,11 @@ export function CasesProvider({ store: injected, children }: { store?: CaseStore
 
   const importText = useCallback(async (text: string) => {
     const parsed = parseCaseExport(text)
-    if (!parsed.ok) return { error: parsed.error }
+    if (!parsed.ok) return { error: parsed.error, code: parsed.code }
     const merged = mergeImported(latest.current, parsed.cases)
     const added = merged.slice(latest.current.length)
     try { for (const c of added) await save(c) }
-    catch (e) { return { error: e instanceof Error ? e.message : String(e) } }
+    catch (e) { return { error: e instanceof Error ? e.message : String(e), code: 'SAVE_FAILED' as ImportErrorCode } }
     return { added: added.length }
   }, [save])
 

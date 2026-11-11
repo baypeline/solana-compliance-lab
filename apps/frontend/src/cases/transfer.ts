@@ -2,6 +2,8 @@
 import { newCaseId, type CaseRecord } from './model'
 import { validateCaseRecord } from './store'
 
+export type ImportErrorCode = 'INVALID_JSON' | 'INVALID_FILE' | 'INVALID_FORMAT' | 'UNSUPPORTED_VERSION' | 'MISSING_CASES' | 'INVALID_RECORD' | 'SAVE_FAILED' | 'READ_FAILED'
+
 const FORMAT = 'scl-cases'
 const VERSION = 1
 
@@ -9,21 +11,21 @@ export function exportCases(records: CaseRecord[]): string {
   return JSON.stringify({ format: FORMAT, version: VERSION, exportedAt: new Date().toISOString(), cases: records }, null, 2)
 }
 
-export function parseCaseExport(text: string): { ok: true; cases: CaseRecord[] } | { ok: false; error: string } {
+export function parseCaseExport(text: string): { ok: true; cases: CaseRecord[] } | { ok: false; error: string; code: ImportErrorCode } {
   let data: unknown
   try {
     data = JSON.parse(text)
   } catch {
-    return { ok: false, error: 'The file is not JSON.' }
+    return { ok: false, code: 'INVALID_JSON', error: 'The file is not JSON.' }
   }
-  if (data === null || typeof data !== 'object') return { ok: false, error: 'The file is not a case export.' }
+  if (data === null || typeof data !== 'object') return { ok: false, code: 'INVALID_FILE', error: 'The file is not a case export.' }
   const d = data as { format?: unknown; version?: unknown; cases?: unknown }
-  if (d.format !== FORMAT) return { ok: false, error: 'The file is not a Compliance Lab case export.' }
-  if (d.version !== VERSION) return { ok: false, error: `Unsupported export version ${String(d.version)}.` }
-  if (!Array.isArray(d.cases)) return { ok: false, error: 'The file has no case list.' }
+  if (d.format !== FORMAT) return { ok: false, code: 'INVALID_FORMAT', error: 'The file is not a Compliance Lab case export.' }
+  if (d.version !== VERSION) return { ok: false, code: 'UNSUPPORTED_VERSION', error: `Unsupported export version ${String(d.version)}.` }
+  if (!Array.isArray(d.cases)) return { ok: false, code: 'MISSING_CASES', error: 'The file has no case list.' }
   for (const c of d.cases) {
     const errs = validateCaseRecord(c)
-    if (errs.length > 0) return { ok: false, error: `A case could not be read: ${errs[0]}` }
+    if (errs.length > 0) return { ok: false, code: 'INVALID_RECORD', error: `A case could not be read: ${errs[0]}` }
   }
   return { ok: true, cases: d.cases as CaseRecord[] }
 }

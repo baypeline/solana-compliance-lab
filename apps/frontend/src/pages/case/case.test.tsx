@@ -95,9 +95,9 @@ describe('CasePage', () => {
     expect(audit.textContent).toContain(c.runs[0].compliance!.decision.decisionId)
   })
 
-  it('says so when the case is not in this browser', async () => {
+  it('says so when the case is not in storage', async () => {
     renderPage(<CasePage />, { path: '/cases/:caseId', at: '/cases/CL-0099', seed: [] })
-    expect(await screen.findByText('This case is not saved in this browser.')).toBeTruthy()
+    expect(await screen.findByText('This case could not be found in storage.')).toBeTruthy()
   })
 
   it('offers a re-run for a run that was interrupted by a reload', async () => {

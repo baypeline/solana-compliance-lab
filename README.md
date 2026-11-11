@@ -27,7 +27,7 @@ docker compose -f compose.dev.yaml down
 
 ## 화면에서 저장된 데이터 분석하기
 
-1. Frontend에 접속하고 이름 입력 화면이 나오면 입력합니다. 이름은 브라우저에만 저장하는 데모용 식별자입니다.
+1. Frontend에 접속하고 이름 입력 화면이 나오면 입력합니다. 이름은 브라우저에만 저장하는 데모용 식별자입니다. 로그인 화면이나 상단 언어 선택에서 한국어·영어를 전환할 수 있으며 선택은 새로고침 후에도 유지됩니다.
 2. **Settings → Use the Backend**로 Backend 모드를 선택합니다. Compose 실행의 기본값은 Backend입니다.
 3. **New case → Fixture data**에서 **Mainnet:**으로 시작하는 시나리오 카드를 선택합니다.
 4. 송신자·수신자와 금액·자산을 확인하고 **Run case**를 누릅니다.

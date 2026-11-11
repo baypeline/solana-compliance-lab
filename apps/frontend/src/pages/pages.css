@@ -996,3 +996,9 @@
     padding: 8px 10px;
   }
 }
+
+/* Keep translated column labels and addresses readable; narrow screens scroll inside the table. */
+@media (max-width: 600px) {
+  table.cases { min-width: 900px; }
+  table.cases .pair { white-space: nowrap; }
+}

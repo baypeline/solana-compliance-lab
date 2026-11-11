@@ -1,6 +1,7 @@
 // Settings: switch Mock/Backend (reloads), move cases between browsers, sign out (design doc §9).
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
+import type { ImportErrorCode } from '../cases/transfer'
 import { useCases } from '../cases/useCases'
 import { useT } from '../i18n/hooks'
 import { currentApiMode, getModeOverride, setModeOverride, type ApiMode } from './apiMode'
@@ -35,7 +36,7 @@ export function SettingsMenu({
   const navigate = useNavigate()
   const { exportText, importText, ready, saving } = useCases()
   const [open, setOpen] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
+  const [message, setMessage] = useState<{ added: number } | { error: string; code?: ImportErrorCode } | null>(null)
   const panel = useRef<HTMLDivElement>(null)
   const mode = currentApiMode()
   const override = getModeOverride()
@@ -99,15 +100,16 @@ export function SettingsMenu({
                   const file = e.target.files?.[0]
                   e.target.value = ''
                   if (!file) return
-                  const result = await importText(await readText(file))
-                  setMessage('error' in result ? result.error : t('ui.settings.imported', { n: result.added }))
+                  try { setMessage(await importText(await readText(file))) }
+                  catch (e) { setMessage({ error: String(e), code: 'READ_FAILED' }) }
                 }}
               />
             </label>
             {message && (
-              <span className="caption t2" role="status">
-                {message}
-              </span>
+              <div className="caption t2" role="status">
+                {'error' in message ? t(`ui.importError.${message.code ?? 'SAVE_FAILED'}`) : t('ui.settings.imported', { n: message.added })}
+                {'error' in message && message.error !== t(`ui.importError.${message.code ?? 'SAVE_FAILED'}`) && <details><summary>{t('ui.technicalDetails')}</summary>{message.error}</details>}
+              </div>
             )}
           </div>
           <button

@@ -2,18 +2,19 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { signIn } from '../app/identity'
 import { WordmarkGlyph } from '../app/Wordmark'
+import { LanguageSelect } from '../i18n/LanguageSelect'
 import { useT } from '../i18n/hooks'
 
 export function LoginPage() {
   const navigate = useNavigate()
   const t = useT()
   const [name, setName] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [missing, setMissing] = useState(false)
 
   function submit(e: FormEvent) {
     e.preventDefault()
     if (name.trim() === '') {
-      setError(t('ui.login.nameMissing'))
+      setMissing(true)
       return
     }
     signIn(name)
@@ -27,6 +28,7 @@ export function LoginPage() {
           <WordmarkGlyph size={24} />
           {t('ui.brand')}
         </span>
+        <LanguageSelect />
         <h1>{t('ui.login.title')}</h1>
         <p className="t2">{t('ui.login.lead')}</p>
         <div className="field">
@@ -37,9 +39,9 @@ export function LoginPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="username"
-            aria-invalid={error ? true : undefined}
+            aria-invalid={missing ? true : undefined}
           />
-          {error && <span className="field-error">{error}</span>}
+          {missing && <span className="field-error">{t('ui.login.nameMissing')}</span>}
         </div>
         <button type="submit" className="btn btn-primary btn-lg">
           {t('ui.login.continue')}

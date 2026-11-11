@@ -50,3 +50,20 @@ describe('copy dictionary covers the contract', () => {
     },
   )
 })
+
+function leaves(value: unknown, prefix = ''): Record<string, string> {
+  if (typeof value === 'string') return { [prefix]: value }
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).flatMap(([key, child]) => Object.entries(leaves(child, prefix ? `${prefix}.${key}` : key))))
+}
+
+it('Korean covers every English key and preserves interpolation parameters', async () => {
+  const { ko } = await import('./ko')
+  const english = leaves(en), korean = leaves(ko)
+  expect(Object.keys(korean).sort()).toEqual(Object.keys(english).sort())
+  const parameters = (text: string) => [...new Set([...text.matchAll(/\{(\w+)(?:\|[^}]+)?\}/g)].map((m) => m[1]))].sort()
+  for (const [key, value] of Object.entries(english)) {
+    expect(korean[key].trim(), key).not.toBe('')
+    expect(parameters(korean[key]), key).toEqual(parameters(value))
+    expect(korean[key], key).not.toContain('\ufffd')
+  }
+})

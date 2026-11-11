@@ -1,3 +1,5 @@
+import { useContext } from 'react'
+import { MessagesContext } from '../../i18n/context'
 import type { Action } from '../../api/types'
 import { DecisionTag } from '../../components/StatusTag'
 import { currentApiMode, scenariosFor } from '../../app/apiMode'
@@ -8,6 +10,7 @@ import { scenarioName } from './scenarioName'
 /** Quick picks use a matching real or synthetic sender. Expected decisions exist only for synthetic fixtures. */
 export function ScenarioList({ current, onPick }: { current: string | null; onPick: (fixtureId: string) => void }) {
   const t = useT()
+  const messages = useContext(MessagesContext)
   return (
     <section className="scenarios" aria-labelledby="nc-scenarios">
       <h2 id="nc-scenarios">{t('ui.newcase.scenarios')}</h2>
@@ -26,7 +29,7 @@ export function ScenarioList({ current, onPick }: { current: string | null; onPi
                 onClick={() => onPick(s.fixtureId)}
               >
                 <span className="scenario-copy">
-                  <span className="scenario-name">{scenarioName(s.fixtureId)}</span>
+                  <span className="scenario-name">{scenarioName(s.fixtureId, messages)}</span>
                   <span className="caption t2">{t(s.provenance.dataType === 'ON_CHAIN' ? 'ui.newcase.recordedMainnet' : 'ui.data.SYNTHETIC')}</span>
                 </span>
                 {expected && <DecisionTag action={expected} />}

@@ -1,5 +1,5 @@
 import { useContext, useMemo } from 'react'
-import { MessagesContext } from './context'
+import { LocaleContext, MessagesContext } from './context'
 import { createCopy, fill, type Copy } from './copy'
 import type { Messages } from './en'
 
@@ -27,3 +27,5 @@ export function useCopy(): Copy {
   const messages = useContext(MessagesContext)
   return useMemo(() => createCopy(messages), [messages])
 }
+
+export function useLocale() { return useContext(LocaleContext) }

@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router'
+import { LanguageSelect } from '../i18n/LanguageSelect'
 import { useCases } from '../cases/useCases'
 import { useT } from '../i18n/hooks'
 import { backendLabel, currentApiMode } from './apiMode'
@@ -29,12 +30,13 @@ export function AppShell() {
             {mode === 'mock' ? t('ui.settings.modeMock') : `${t('ui.settings.modeBackend')} · ${backendLabel()}`}
           </span>
           <span className="t2 who">{identity?.name}</span>
+          <LanguageSelect />
           <SettingsMenu />
         </div>
       </header>
       {storageError && <section className="notice notice-warn" role="alert">
         <p>{t(ready ? 'ui.storage.writeFailed' : 'ui.storage.loadFailed')}</p>
-        <p className="caption">{storageError}</p>
+        <details className="caption"><summary>{t('ui.technicalDetails')}</summary>{storageError}</details>
         {ready && <button type="button" className="btn" disabled={saving} onClick={() => void retrySave().catch(() => {})}>{t('ui.storage.retry')}</button>}
         <button type="button" className="btn" disabled={saving} onClick={() => void reload()}>{t(ready ? 'ui.storage.discardReload' : 'ui.storage.reload')}</button>
       </section>}

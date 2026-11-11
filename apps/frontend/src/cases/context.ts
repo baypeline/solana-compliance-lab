@@ -1,4 +1,5 @@
 import { createContext } from 'react'
+import type { ImportErrorCode } from './transfer'
 import type { CaseRecord } from './model'
 
 export interface CasesValue {
@@ -14,7 +15,7 @@ export interface CasesValue {
   /** Changes one case starting from its latest state, so two writers in flight cannot overwrite each other. */
   update(id: string, change: (c: CaseRecord) => CaseRecord): Promise<void>
   remove(id: string): Promise<void>
-  importText(text: string): Promise<{ added: number } | { error: string }>
+  importText(text: string): Promise<{ added: number } | { error: string; code?: ImportErrorCode }>
   exportText(): string
 }
 

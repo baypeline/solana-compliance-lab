@@ -15,7 +15,7 @@ export function ErrorNotice({ error, step, onRetry }: { error: StoredError; step
         {error.status !== null && ` · HTTP ${error.status}`}
         {error.requestId && ` · ${t('ui.errorNotice.request', { id: error.requestId })}`}
       </span>
-      {error.message && error.message !== text.title && <span className="caption muted">{error.message}</span>}
+      {error.message && error.message !== text.title && <details className="caption muted"><summary>{t('ui.technicalDetails')}</summary>{error.message}</details>}
       {onRetry && error.retryable && (
         <div>
           <button type="button" className="btn" onClick={onRetry}>

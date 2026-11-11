@@ -9,7 +9,7 @@ function CrashScreen({ error }: { error: Error }) {
       <div className="notice notice-error" role="alert">
         <strong>{t('ui.crash.title')}</strong>
         <span className="t2">{t('ui.crash.detail')}</span>
-        <span className="caption muted">{error.message}</span>
+        <details className="caption muted"><summary>{t('ui.technicalDetails')}</summary>{error.message}</details>
         <div>
           <button type="button" className="btn" onClick={() => window.location.reload()}>
             {t('ui.crash.reload')}

@@ -86,7 +86,7 @@ export function validateForm(f: FormState): { input: CaseInput | null; errors: F
     else
       errors.amount =
         parsed.error === 'tooManyDecimals'
-          ? { key: 'ui.newcase.amountDecimals', params: { unit: f.assetType === 'SOL' ? 'SOL' : 'This token', n: decimals } }
+          ? { key: 'ui.newcase.amountDecimals', params: { unit: f.assetType === 'SOL' ? 'SOL' : f.assetType === 'TOKEN_2022' ? 'Token-2022' : 'SPL', n: decimals } }
           : parsed.error === 'notPositive'
             ? { key: 'ui.newcase.amountPositive' }
             : { key: 'ui.newcase.amountFormat' }

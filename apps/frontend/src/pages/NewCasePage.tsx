@@ -70,7 +70,7 @@ export function NewCasePage({ runOptions }: { runOptions?: Partial<RunCaseOption
 
   return (
     <main className="page">
-      <nav className="crumb caption" aria-label="Breadcrumb">
+      <nav className="crumb caption" aria-label={t('ui.breadcrumb')}>
         <Link to="/">{t('ui.newcase.crumb')}</Link> / {t('ui.newcase.title')}
       </nav>
       <div className="page-head">

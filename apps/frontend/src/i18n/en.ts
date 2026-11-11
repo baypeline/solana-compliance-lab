@@ -1,6 +1,6 @@
 // English copy (design doc §7). Every visible sentence lives here; components never hard-code UI text.
 // Contract codes are turned into sentences by lookup only. Nothing here decides anything.
-// A Korean dictionary (ko.ts) can follow the same shape later.
+// Korean copy in ko.ts implements the same complete shape.
 
 export const en = {
   decision: {
@@ -161,6 +161,12 @@ export const en = {
     },
   },
   ui: {
+    importError: {
+      INVALID_JSON: 'The file is not JSON.', INVALID_FILE: 'The file is not a case export.',
+      INVALID_FORMAT: 'The file is not a Compliance Lab case export.', UNSUPPORTED_VERSION: 'This export version is not supported.',
+      MISSING_CASES: 'The file has no case list.', INVALID_RECORD: 'A saved case does not match the data contract.',
+      SAVE_FAILED: 'The imported records could not be saved. Retry saving or check the server connection.', READ_FAILED: 'The file could not be read.',
+    },
     storage: {
       saving: 'Saving records…',
       loading: 'Loading records…',
@@ -171,6 +177,7 @@ export const en = {
       server: 'Records are saved on the server.', local: 'Mock mode: records are saved in this browser only.',
     },
     brand: 'Compliance Lab',
+    language: 'Language', breadcrumb: 'Breadcrumb', technicalDetails: 'Technical details',
     nav: { cases: 'Cases', main: 'Main' },
     settings: {
       open: 'Settings',
@@ -182,7 +189,7 @@ export const en = {
       useBackend: 'Use the Backend',
       resetMode: 'Use the build setting',
       reloadNote: 'The page reloads to switch.',
-      cases: 'Cases in this browser',
+      cases: 'Case records',
       export: 'Export cases',
       import: 'Import cases',
       imported: '{n} {n|case|cases} imported.',
@@ -277,7 +284,7 @@ export const en = {
         auditHint: 'Versions, IDs and original codes',
       },
       reasons: 'Reasons',
-      notFound: 'This case is not saved in this browser.',
+      notFound: 'This case could not be found in storage.',
       back: 'Back to cases',
       runLabel: 'Run',
       runOption: 'Run {n} · {when}',
@@ -494,4 +501,5 @@ export const en = {
   },
 } as const
 
-export type Messages = typeof en
+type StringValues<T> = { readonly [K in keyof T]: T[K] extends string ? string : StringValues<T[K]> }
+export type Messages = StringValues<typeof en>

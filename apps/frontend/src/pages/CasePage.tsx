@@ -53,7 +53,7 @@ export function CasePage({ runOptions }: { runOptions?: Partial<RunCaseOptions> 
 
   return (
     <main className="page case-page">
-      <nav className="crumb caption" aria-label="Breadcrumb">
+      <nav className="crumb caption" aria-label={t('ui.breadcrumb')}>
         <Link to="/">{t('ui.case.crumb')}</Link> / <span className="mono">{record.id}</span>
       </nav>
       {run && <RunSwitcher runs={record.runs} selected={run.runId} onSelect={setSelectedId} />}

@@ -1,3 +1,5 @@
+import { useContext } from 'react'
+import { MessagesContext } from '../../i18n/context'
 import type { Asset, Mode } from '../../api/types'
 import { AddressChip } from '../../components/AddressChip'
 import { Term } from '../../components/Term'
@@ -16,6 +18,7 @@ function Err({ e }: { e?: FormErrors[keyof FormErrors] }) {
 
 function Party({ side, form, set, errors }: { side: 'sender' | 'recipient'; form: FormState; set: (p: Partial<FormState>) => void; errors: FormErrors }) {
   const t = useT()
+  const messages = useContext(MessagesContext)
   const fxKey = side === 'sender' ? 'senderFx' : 'recipientFx'
   const addrKey = side === 'sender' ? 'senderAddr' : 'recipientAddr'
   const id = `nc-${side}`
@@ -30,7 +33,7 @@ function Party({ side, form, set, errors }: { side: 'sender' | 'recipient'; form
             <select id={id} className="input" value={form[fxKey]} onChange={(e) => set({ [fxKey]: e.target.value })}>
               {scenariosFor(currentApiMode()).map((s) => (
                 <option key={s.fixtureId} value={s.fixtureId}>
-                  {scenarioName(s.fixtureId)} · {t(s.provenance.dataType === 'ON_CHAIN' ? 'ui.newcase.recordedMainnet' : 'ui.data.SYNTHETIC')}
+                  {scenarioName(s.fixtureId, messages)} · {t(s.provenance.dataType === 'ON_CHAIN' ? 'ui.newcase.recordedMainnet' : 'ui.data.SYNTHETIC')}
                 </option>
               ))}
             </select>
