@@ -40,7 +40,7 @@ def main():
     assert len(notes)==parsed.slides and all(note['paragraphs'] for note in notes)
     assert notes==json.loads((ROOT/'presentation/src/notes.json').read_text())
     counts=[int(re.search(r'data-builds="(\d+)"',s)[1]) for s in sections]
-    assert counts==[1,3,3,4,5,1,4,3,2,2,2,3] and sum(counts)==33
+    assert counts==[1,3,3,4,5,1,4,4,2,2,3,3] and sum(counts)==35
     assert all(len(note['steps'])==count for note,count in zip(notes,counts)), 'Missing linear speaker cues'
     assert all(len(note['screen'])==count for note,count in zip(notes,counts)), 'Missing on-screen interpretation'
     main=re.search(r'<main id="deck">(.*?)</main>',text,re.S)[1]
@@ -55,8 +55,9 @@ def main():
     assert "connect-src 'none'" in child and "default-src 'none'" in child
     child_data=json.loads(re.search(r'<script id="offline-demo-data"[^>]*>(.*?)</script>',child,re.S)[1])
     assert child_data == json.loads((ROOT/'presentation/data/demo.json').read_text())
-    assert 'data-service-url' not in main and '<iframe id="service-demo-frame" title=' in main
+    assert 'data-service-url' not in main and '<iframe id="service-demo-frame"' in main
     text_without_demo=text[:embedded.start()]+text[embedded.end():]
+    assert re.findall(r'<iframe[^>]+data-demo-stage="([^"]+)"', main) == ['analysis','gateway','network']
     assert 'data-interactive-demo' in sections[5] and '<iframe ' in sections[5]
     assert 'service-demo-image' not in text and 'INLINE_FE' not in text
     assert len(parsed.ids)==len(set(parsed.ids)), 'Duplicate HTML IDs'
@@ -129,5 +130,5 @@ def main():
     assert scenarios['skipped']['research']['result']['blockStatus'] == 'SKIPPED'
     assert scenarios['skipped']['research']['result']['leaderExclusionValid'] is None
     assert data['analyses']['recipient']['result']['coverage']['transferCount']==0
-    print('PASS: twelve slides, 33 linear states and matching cues, network-disabled bundled FE with embedded JSON, contract-valid data and twelve consistent saved audits')
+    print('PASS: twelve slides, 35 linear states and matching cues, network-disabled bundled FE with embedded JSON, contract-valid data and twelve consistent saved audits')
 if __name__=='__main__':main()

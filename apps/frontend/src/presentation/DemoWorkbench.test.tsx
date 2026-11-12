@@ -6,7 +6,7 @@ import { I18nProvider } from '../i18n/I18nProvider'
 import { DemoWorkbench } from './DemoWorkbench'
 import type { OfflineRecords } from './records'
 const records = JSON.parse(readFileSync('../../presentation/data/demo.json', 'utf8')) as OfflineRecords
-const open = () => render(<I18nProvider locale="ko"><DemoWorkbench records={records} /></I18nProvider>)
+const open = (stage: 'analysis' | 'gateway' | 'network' = 'analysis') => render(<I18nProvider locale="ko"><DemoWorkbench records={records} stage={stage} /></I18nProvider>)
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
 describe('Presentation workbench', () => {
   it('opens the pattern result and expands only its recorded evidence without network access', () => {
@@ -15,26 +15,26 @@ describe('Presentation workbench', () => {
     expect(screen.queryByRole('textbox')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: '분석 결과 열기' }))
     expect(screen.getByText('35')).toBeTruthy()
-    expect(screen.getByText('WARN')).toBeTruthy()
+    expect(screen.getByText('MEDIUM · 규칙 기반 점수')).toBeTruthy()
+    expect(screen.queryByText('WARN')).toBeNull()
+    expect(screen.queryByRole('tab', { name: 'Constellation' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '제재 주소 일치' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: '판단 근거 확인' }))
     expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(5)
     fireEvent.click(screen.getByRole('button', { name: '전체 근거 12건 펼치기' }))
     expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(13)
     expect(network).not.toHaveBeenCalled()
   })
-  it('moves from WARN to the recorded BLOCK control case in one click', () => {
-    open()
-    fireEvent.click(screen.getByRole('tab', { name: '제출 경로' }))
-    fireEvent.click(screen.getByRole('button', { name: 'BLOCK 사례로 통제 비교' }))
+  it('compares the same BLOCK request only in the gateway stage', () => {
+    open('gateway')
+    expect(screen.queryByRole('tab', { name: 'Constellation' })).toBeNull()
     expect(screen.getByText('제출 중단')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: '정책 미적용 경로' }))
     expect(screen.getByText('제출됨')).toBeTruthy()
     expect(screen.queryByRole('alert')).toBeNull()
   })
   it('selects exact recorded boundary conditions for both models', () => {
-    open()
-    fireEvent.click(screen.getByRole('tab', { name: 'Constellation' }))
-    fireEvent.click(screen.getByRole('button', { name: 'BLOCK 사례로 통제 비교' }))
+    open('network')
     expect(screen.getByText('리더는 거래를 포함해야 합니다.')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: '39.99% · 포함 기준 미달' }))
     expect(screen.queryByText('리더는 거래를 포함해야 합니다.')).toBeNull()
@@ -46,7 +46,8 @@ describe('Presentation workbench', () => {
     open()
     fireEvent.click(screen.getByRole('button', { name: '정상 기준' }))
     fireEvent.click(screen.getByRole('button', { name: '분석 결과 열기' }))
-    expect(screen.getByText('ALLOW')).toBeTruthy()
+    expect(screen.getByText('0')).toBeTruthy()
+    expect(screen.queryByText('ALLOW')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: '시연 처음으로' }))
     expect(screen.getByRole('button', { name: '분석 결과 열기' })).toBeTruthy()
     expect(screen.queryByText('ALLOW')).toBeNull()

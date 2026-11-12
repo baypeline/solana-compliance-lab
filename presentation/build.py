@@ -27,7 +27,7 @@ def main():
     demo_document = (
         """<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; font-src data:; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'"><style>"""
         + demo_font + demo_css
-        + '</style></head><body><div id="root"></div><script id="offline-demo-data" type="application/json">'
+        + '</style></head><body data-demo-stage="analysis"><div id="root"></div><script id="offline-demo-data" type="application/json">'
         + demo_json + '</script><script>' + demo_js + '</script></body></html>'
     )
     html = (HERE / 'src/deck.html').read_text()
