@@ -9,14 +9,14 @@
   const box=(x,y,w,h,cls='node')=>n('rect',{x,y,width:w,height:h,rx:7,class:cls});
   function conceptGraph(canvas,kind,width,visible=3){
     canvas.replaceChildren();const left=110,right=width-130,mid=width*.43;
-    canvas.append(box(left-90,99,180,82,'node wallet-card'),text(left,134,kind==='exact'?'분석 주소 A':'지갑 A'),text(left,163,'분석 대상','svg-caption'));
+    canvas.append(box(left-90,99,180,82,'node wallet-card'),text(left,148,kind==='exact'?'분석 주소 A':'지갑 A'));
     if(kind==='fan'||kind==='repeat'){
-      canvas.append(path([50,140,230].slice(0,visible).map(y=>`M${left+90} 140H${mid}V${y}H${right-100}`).join(''),'rail flow'));
-      [50,140,230].slice(0,visible).forEach((y,i)=>{canvas.append(box(right-100,y-34,200,68,'node wallet-card'),text(right,y+2,kind==='repeat'?'수신자 B':['수신자 B','수신자 C','수신자 D'][i]),text(right,y+25,'전송 '+(i+1),'svg-caption'));if(width>800)canvas.append(text((mid+right)/2,y-13,(kind==='repeat'?['00:00','00:20','00:40']:['00:00','00:30','01:00'])[i],'svg-caption'));});
+      [50,140,230].slice(0,visible).forEach(y=>canvas.append(path(`M${left+90} 140H${mid}V${y}H${right-100}`,'rail flow')));
+      [50,140,230].slice(0,visible).forEach((y,i)=>{canvas.append(box(right-100,y-34,200,68,'node wallet-card'),text(right,y+8,kind==='repeat'?'수신자 B':['수신자 B','수신자 C','수신자 D'][i]));if(width>800)canvas.append(text((mid+right)/2,y-13,(kind==='repeat'?['00:00','00:20','00:40']:['00:00','00:30','01:00'])[i],'svg-caption'));});
     }else if(kind==='direct'){
-      canvas.append(path(`M${left+90} 140H${right-100}`,'rail flow'),box(right-100,99,200,82,'node red-node wallet-card'),text(right,134,'제재 주소','red-text'),text(right,163,'목록에 등록된 상대','svg-caption'));
+      canvas.append(path(`M${left+90} 140H${right-100}`,'rail flow'),box(right-100,99,200,82,'node red-node wallet-card'),text(right,148,'제재 주소','red-text'));
     }else{
-      canvas.append(path(`M${left+90} 140H${right-100}`,'wire-muted'),box(right-100,99,200,82,'node red-node wallet-card'),text(right,134,'제재 목록 A','red-text'),text(right,163,'주소 직접 일치','svg-caption'));
+      canvas.append(path(`M${left+90} 140H${right-100}`,'wire-muted'),box(right-100,99,200,82,'node red-node wallet-card'),text(right,148,'제재 목록 A','red-text'));
     }
   }
   const pending=(node,hide)=>{if(!node)return;node.classList.toggle('pending',hide);if(hide)node.setAttribute('aria-hidden','true');else node.removeAttribute('aria-hidden');};
@@ -35,7 +35,6 @@
     plot.append(path(`M50 185H${end}`,'wire'));
     rows.slice(0,visible).forEach((row,i)=>{const x=50+(Date.parse(row.timestamp)-start)/1000/300*650,y=i===2?65:125;plot.append(path(`M${x} ${y+8}V185`,'wire-muted'),circle(x,y,8,'evidence-point'+(i===visible-1?' selected':'')),text(x,y-22,'수신자 '+(i+1),'svg-caption'));});
     if(step>=3)plot.append(text(end+38,179,'111초','svg-caption','start'));
-    $('evidence-label').textContent='근거 '+visible+'/4 · '+rows[visible-1].timestamp.slice(11,19)+' UTC · '+rows[visible-1].toAddress.slice(0,4)+'…'+rows[visible-1].toAddress.slice(-4);
     pending(document.querySelector('.risk-reading'),step<4);
     $('evidence-caption').textContent=step<4?'수집한 전송 근거의 누적':'111초 · 서로 다른 4개 수신자';
   }
@@ -51,19 +50,27 @@
     const circumference=2*Math.PI*56;canvas.append(n('circle',{cx:300,cy:140,r:56,class:'ring-progress','stroke-dasharray':(circumference*s.scenario.attestationPercent/100)+' '+circumference}),text(300,151,s.scenario.attestationPercent+'%','proof-value'),text(300,240,'묶음 증명','svg-caption'),path('M360 140H465','wire'),circle(510,140,40),text(510,148,'리더'),path('M555 140H650','wire-muted'),box(650,100,70,80,r.leaderExclusionValid===false?'node red-node':'node'));
     canvas.append(text(685,151,r.leaderExclusionValid===false?'×':'✓',r.leaderExclusionValid===false?'red-text':'green-text'));
     $('proof-result').textContent=r.leaderExclusionValid===false?'무효':'허용';$('proof-result').className=r.leaderExclusionValid===false?'danger':'';
-    $('proof-result').nextElementSibling.textContent='단일 리더 비교: '+(s.baseline.result.leaderExclusionValid?'제외 허용':'원본 참조');}
+}
   function blockCase(key){const s=cases[key],r=s.research.result,canvas=$('block-figure');canvas.replaceChildren();const skipped=r.blockStatus==='SKIPPED';
     canvas.append(text(335,92,s.scenario.attesterParticipationPercent+'%','ring-value'),n('line',{x1:80,y1:150,x2:620,y2:150,class:'participation-base'}),n('line',{x1:80,y1:150,x2:80+540*s.scenario.attesterParticipationPercent/100,y2:150,class:'participation-bar'}),n('line',{x1:404,y1:122,x2:404,y2:193,class:'threshold-tick'}),text(404,224,'60% 기준','svg-caption'),text(80,190,'0','svg-caption'),text(620,190,'100','svg-caption'),box(662,113,62,78,skipped?'node muted-node':'node'),text(693,163,skipped?'−':'✓',skipped?'amber-text':'blue-text'));
     $('block-result').previousElementSibling.textContent='참여 조건';$('block-result').textContent=skipped?'블록 건너뛰기':'기준 충족';$('block-result').className=skipped?'alert':'';}
-  function coverStep(step){
-    const canvas=document.querySelector('.cover-figure');
-    canvas.querySelectorAll('.pending').forEach(el=>pending(el,false));
-    canvas.querySelector('.flow').setAttribute('d',step===0?'M40 85H280':'M40 85H480V250H310');
-    pending(canvas.querySelector('.stop'),step<1);
-    canvas.querySelectorAll('circle')[2].style.opacity=step<1?'.4':'1';
-    canvas.querySelector('.alternate').style.stroke=step<2?'var(--line)':'var(--amber)';
-    canvas.querySelectorAll('text').forEach((el,i)=>{el.style.opacity=(i===2||i===3)&&step<1?'.5':'1';if(i===4)el.style.fill=step<2?'var(--muted)':'var(--amber)';});
+  const coverCanvas=document.querySelector('.cover-auto');
+  let coverReplayTimer=null;
+  function stopCoverReplay(){clearTimeout(coverReplayTimer);coverReplayTimer=null;}
+  function coverStep(){
+    stopCoverReplay();
+    const canvas=coverCanvas;
+    canvas.classList.remove('running');void canvas.getBoundingClientRect();canvas.classList.add('running');
   }
+  coverCanvas.addEventListener('animationend',event=>{
+    if(event.target!==coverCanvas.querySelector('.trace-alternate')||event.animationName!=='cover-trace')return;
+    stopCoverReplay();
+    coverReplayTimer=setTimeout(()=>{
+      coverReplayTimer=null;
+      if(!coverCanvas.closest('.slide').classList.contains('is-active')||document.body.classList.contains('no-motion')||matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+      coverStep();
+    },3000);
+  });
   function closingStep(step){
     const c=document.querySelector('.boundary-figure');c.querySelector('.ghost').setAttribute('d',step===0?'M95 155H340':step===1?'M95 155H580':'M95 155H580M355 155V280H780V155H860');
     pending(c.querySelector('.stop'),step<1);pending(c.querySelector('.scope-border'),step<2);pending(c.querySelector('.model-box'),step<2);
@@ -71,8 +78,15 @@
     $('closing-caption').textContent=['위험 신호의 탐지와 판단','우리 서비스의 정책 적용 경로','서비스의 통제와 네트워크 포함의 구분'][step];
   }
   const explanations=JSON.parse(document.getElementById('speaker-notes').textContent).map(n=>n.screen);
+  let previousPage=-1;
   function render(page,step){
     const slide=document.querySelectorAll('.slide')[page];slide.dataset.buildIndex=String(step);
+    // Keep established diagram elements still; animate only the next visible information.
+    slide.querySelectorAll('.motion-arrive,.motion-draw,.motion-reveal').forEach(el=>{el.classList.remove('motion-arrive','motion-draw','motion-reveal');if(el.getAttribute('pathLength')==='1'&&el.closest('.figure'))el.removeAttribute('pathLength');});
+    const samePage=previousPage===page;
+    const established=new Set(samePage?[...slide.querySelectorAll('.figure > *')].map(el=>el.outerHTML):[]);
+    const visibleBefore=new Set(samePage?[...slide.querySelectorAll('[data-stage],.policy-path,.policy-path strong,.policy-path small,.risk-reading,.route-outcome,.boundary-figure > *')].filter(el=>!el.classList.contains('pending')):[]);
+    if(page!==0){stopCoverReplay();coverCanvas.classList.remove('running');}
     switch(page){
       case 0:coverStep(step);break;
       case 1:conceptGraph($('concept-figure'),'fan',1040,step+1);$('concept-caption').textContent=['한 지갑의 전송 기록','서로 다른 수신자로의 전송','시간과 수신자를 묶은 흐름 분석'][step];break;
@@ -86,6 +100,18 @@
       case 9:blockCase(step===0?'boundary':'skipped');break;
       case 10:closingStep(step);break;
     }
+    slide.querySelectorAll('.figure > *').forEach(el=>{
+      if(established.has(el.outerHTML)||el.classList.contains('pending'))return;
+      if(el.tagName.toLowerCase()==='path'&&el.classList.contains('flow')){
+        el.setAttribute('pathLength','1');el.classList.add('motion-draw');
+      }else if(['text','circle','rect'].includes(el.tagName.toLowerCase())&&!el.classList.contains('ring-bg')){
+        el.classList.add('motion-arrive');
+      }
+    });
+    slide.querySelectorAll('[data-stage],.policy-path,.policy-path strong,.policy-path small,.risk-reading,.route-outcome,.boundary-figure > *').forEach(el=>{
+      if(!visibleBefore.has(el)&&!el.closest('.pending'))el.classList.add('motion-reveal');
+    });
+    previousPage=page;
     const interpretation=document.getElementById('scene-explanation-'+page);if(interpretation)interpretation.textContent=explanations[page][step];
     slide.classList.remove('frame-enter');void slide.offsetWidth;slide.classList.add('frame-enter');
   }
@@ -93,5 +119,5 @@
   const active=document.querySelector('.slide.is-active');render([...document.querySelectorAll('.slide')].indexOf(active),Number(active.dataset.buildIndex));
   let printState;
   addEventListener('beforeprint',()=>{printState=[...document.querySelectorAll('.slide')].map(s=>Number(s.dataset.buildIndex));document.querySelectorAll('.slide').forEach((s,i)=>render(i,Number(s.dataset.builds)-1));});
-  addEventListener('afterprint',()=>{if(printState)document.querySelectorAll('.slide').forEach((s,i)=>render(i,printState[i]));});
+  addEventListener('afterprint',()=>{if(printState)document.querySelectorAll('.slide').forEach((s,i)=>render(i,printState[i]));if(coverCanvas.closest('.slide').classList.contains('is-active'))coverStep();});
 })();

@@ -18,7 +18,6 @@
     slides.forEach((slide,i)=>{slide.hidden=i!==current;slide.classList.toggle('is-active',i===current);if(i===current){slide.dataset.buildIndex=String(build);slide.scrollTop=0;}});
     document.querySelectorAll('[data-chapter-marker]').forEach(n=>n.setAttribute('aria-current',String(n.dataset.chapterMarker===slides[current].dataset.chapter)));
     put('page-number',String(current+1).padStart(2,'0')+' / '+String(slides.length).padStart(2,'0'));
-    put('build-number','전개 '+(build+1)+' / '+counts[current]);
     $('previous').disabled=!canMove(-1);$('next').disabled=!canMove(1);
     $('progress').style.width=((counts.slice(0,current).reduce((a,b)=>a+b,0)+build+1)/total*100)+'%';
     const hash='#'+(current+1)+(build?'.'+(build+1):'');if(location.hash!==hash)history.replaceState(null,'',hash);

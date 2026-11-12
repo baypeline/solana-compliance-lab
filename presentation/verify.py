@@ -39,11 +39,12 @@ def main():
     assert len(notes)==parsed.slides and all(note['paragraphs'] for note in notes)
     assert notes==json.loads((ROOT/'presentation/src/notes.json').read_text())
     counts=[int(re.search(r'data-builds="(\d+)"',s)[1]) for s in sections]
-    assert counts==[3,3,3,4,5,4,3,2,2,2,3] and sum(counts)==34
+    assert counts==[1,3,3,4,5,4,3,2,2,2,3] and sum(counts)==32
     assert all(len(note['steps'])==count for note,count in zip(notes,counts)), 'Missing linear speaker cues'
     assert all(len(note['screen'])==count for note,count in zip(notes,counts)), 'Missing on-screen interpretation'
     main=re.search(r'<main id="deck">(.*?)</main>',text,re.S)[1]
     assert not re.search(r'<(?:button|input|select|textarea)\b',main), 'Presentation content must have no branching controls'
+    assert not re.search(r'class="(?:eyebrow|slide-foot|scene-head|nav-hint)"',text), 'Auxiliary presentation microcopy must be removed'
     assert not parsed.dependencies, parsed.dependencies
     assert len(parsed.ids)==len(set(parsed.ids)), 'Duplicate HTML IDs'
     assert not re.search(r'@import|\bfetch\s*\(|XMLHttpRequest|WebSocket',text), 'Runtime network dependency'
@@ -115,5 +116,5 @@ def main():
     assert scenarios['skipped']['research']['result']['blockStatus'] == 'SKIPPED'
     assert scenarios['skipped']['research']['result']['leaderExclusionValid'] is None
     assert data['analyses']['recipient']['result']['coverage']['transferCount']==0
-    print('PASS: eleven slides, 34 linear states and matching cues, no in-slide controls, contract-valid data and twelve consistent saved audits')
+    print('PASS: eleven slides, 32 linear states and matching cues, no in-slide controls, contract-valid data and twelve consistent saved audits')
 if __name__=='__main__':main()
