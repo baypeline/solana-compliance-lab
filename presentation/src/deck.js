@@ -35,7 +35,8 @@
   const interactive = 'button,a,input,select,textarea,label,summary,details,[role="button"],[role="slider"],[contenteditable="true"]';
   const gestureBlocked = (event) => event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey
     || document.querySelector('dialog[open]') || !(event.target instanceof Element)
-    || event.target.closest(interactive);
+    || event.target.closest(interactive+', [data-interactive-demo]')
+    || slides[current].classList.contains('service-demo');
   let lastAdvanceClick = -Infinity;
   $('deck').addEventListener('click', (event) => {
     if (gestureBlocked(event) || event.button !== 0 || event.detail > 1 || window.getSelection()?.toString()) return;
@@ -99,5 +100,5 @@
   function toggleTimer(){running=!running;if(running){deadline=performance.now()+remaining*1000;interval=setInterval(updateTimer,250);}else{remaining=Math.ceil((deadline-performance.now())/1000);clearInterval(interval);}$('timer').hidden=false;put('toggle-timer',running?'타이머 일시정지 · T':'타이머 계속 · T');updateTimer();}
   $('toggle-timer').addEventListener('click',toggleTimer);$('reset-timer').addEventListener('click',()=>{clearInterval(interval);running=false;remaining=720;$('timer').hidden=true;put('toggle-timer','12분 타이머 · T');updateTimer();});
   $('print-deck').addEventListener('click',()=>{$('tools').close();window.print();});
-  document.addEventListener('keydown',(e)=>{if(e.ctrlKey||e.metaKey||e.altKey||e.repeat||document.querySelector('dialog[open]'))return;if(e.target.closest('input,select,textarea,[contenteditable=true]'))return;if(e.key===' '&&e.target.closest('button,a,summary'))return;if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();advance(1);}else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();advance(-1);}else if(e.key==='Home'){e.preventDefault();navigate(0);}else if(e.key==='End'){e.preventDefault();navigate(slides.length-1,true,counts.at(-1)-1);}else if(e.key.toLowerCase()==='f')fullscreen();else if(e.key.toLowerCase()==='m'){motion=!motion;applyMotion();}else if(e.key.toLowerCase()==='n')open('notes');else if(e.key.toLowerCase()==='t')toggleTimer();else if(e.key==='?')open('tools');});
+  document.addEventListener('keydown',(e)=>{if(e.ctrlKey||e.metaKey||e.altKey||e.repeat||document.querySelector('dialog[open]'))return;if(slides[current].classList.contains('service-demo')&&['ArrowRight','ArrowLeft','PageDown','PageUp',' ','Home','End'].includes(e.key))return;if(e.target.closest('input,select,textarea,[contenteditable=true]'))return;if(e.key===' '&&e.target.closest('button,a,summary'))return;if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();advance(1);}else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();advance(-1);}else if(e.key==='Home'){e.preventDefault();navigate(0);}else if(e.key==='End'){e.preventDefault();navigate(slides.length-1,true,counts.at(-1)-1);}else if(e.key.toLowerCase()==='f')fullscreen();else if(e.key.toLowerCase()==='m'){motion=!motion;applyMotion();}else if(e.key.toLowerCase()==='n')open('notes');else if(e.key.toLowerCase()==='t')toggleTimer();else if(e.key==='?')open('tools');});
 })();

@@ -20,6 +20,7 @@ services:
     - ./apps/frontend/demo:/workspace/apps/frontend/demo:ro
     - ./apps/frontend/index.html:/workspace/apps/frontend/index.html:ro
     - ./apps/frontend/vite.config.ts:/workspace/apps/frontend/vite.config.ts:ro
+    - ./presentation:/workspace/presentation:ro
     - ./contracts:/workspace/contracts:ro
     - ./services/collector/fixtures:/workspace/services/collector/fixtures:ro
     depends_on:

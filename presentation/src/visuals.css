@@ -43,3 +43,13 @@
 @keyframes diagram-arrive{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 @keyframes result-reveal{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:650px){.masthead .brand{flex-direction:column;align-items:flex-start;gap:3px}.masthead .brand span,.masthead .brand strong{font-size:16px}.masthead .utilities{gap:12px}.masthead .utilities button{font-size:16px}}
+
+/* The demo is the bundled React frontend reading embedded JSON. */
+.utilities>a{font-size:16px;min-height:44px;display:inline-flex;align-items:center;font-weight:600}
+.service-demo .slide-heading{margin-bottom:14px}
+.service-demo h2{font-size:clamp(28px,3vw,42px)}
+.service-demo .demo-surface{padding:0;display:block;max-height:none;min-height:0;background:#0b0e15;overflow:hidden}
+.demo-surface iframe{border:0;width:100%;height:100%;display:block;background:#0b0e15}
+.service-demo .scene-explanation{font-size:17px;margin-top:10px}
+@media(max-width:650px){.masthead:has(#reset-offline-demo:not([hidden])){height:auto;min-height:88px;flex-wrap:wrap;padding-top:10px;padding-bottom:8px;gap:4px}.masthead:has(#reset-offline-demo:not([hidden])) .utilities{flex-wrap:wrap}.service-demo .demo-surface{height:65dvh;min-height:400px}.utilities>a{font-size:16px}}
+@media print{.demo-surface iframe{display:none}.service-demo .demo-surface{height:90mm;flex:none}.service-demo .demo-surface:after{content:'실제 서비스의 상호작용 시연 · 브라우저에서 실행';display:block;padding:35px;color:#edf3fb;font-size:22px}}

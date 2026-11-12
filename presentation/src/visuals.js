@@ -78,6 +78,11 @@
     $('closing-caption').textContent=['위험 신호의 탐지와 판단','우리 서비스의 정책 적용 경로','서비스의 통제와 네트워크 포함의 구분'][step];
   }
   const explanations=JSON.parse(document.getElementById('speaker-notes').textContent).map(n=>n.screen);
+  const demoFrame=$('service-demo-frame');
+  function showServiceDemo(){
+    if(!demoFrame.hasAttribute('srcdoc'))demoFrame.srcdoc=$('offline-demo-document').content.textContent;
+  }
+  $('reset-offline-demo').addEventListener('click',()=>{demoFrame.srcdoc=$('offline-demo-document').content.textContent;});
   let previousPage=-1;
   function render(page,step){
     const slide=document.querySelectorAll('.slide')[page];slide.dataset.buildIndex=String(step);
@@ -87,18 +92,20 @@
     const established=new Set(samePage?[...slide.querySelectorAll('.figure > *')].map(el=>el.outerHTML):[]);
     const visibleBefore=new Set(samePage?[...slide.querySelectorAll('[data-stage],.policy-path,.policy-path strong,.policy-path small,.risk-reading,.route-outcome,.boundary-figure > *')].filter(el=>!el.classList.contains('pending')):[]);
     if(page!==0){stopCoverReplay();coverCanvas.classList.remove('running');}
+    $('reset-offline-demo').hidden=!document.querySelector('.service-demo.is-active');
     switch(page){
+      case 5:showServiceDemo();break;
       case 0:coverStep(step);break;
       case 1:conceptGraph($('concept-figure'),'fan',1040,step+1);$('concept-caption').textContent=['한 지갑의 전송 기록','서로 다른 수신자로의 전송','시간과 수신자를 묶은 흐름 분석'][step];break;
       case 2:document.querySelectorAll('[data-stage]').forEach((el,i)=>{pending(el,i>step);el.classList.toggle('current',i===step);});document.querySelectorAll('.stage-trace>i').forEach((el,i)=>pending(el,i>=step));$('stage-caption').textContent=stageCaptions[step];break;
       case 3:showRule(['exact','direct','fan','repeat'][step]);break;
       case 4:evidenceStep(step);break;
-      case 5:pending(document.querySelector('.policy-path.block'),step<2);document.querySelectorAll('.policy-path.warn strong,.policy-path.warn small').forEach(el=>pending(el,step<1));document.querySelectorAll('.policy-path.block strong,.policy-path.block small').forEach(el=>pending(el,step<3));break;
-      case 6:pending(document.querySelector('.gateway-track.open'),step<2);pending($('gateway-blocked'),step<1);pending(document.querySelector('.gateway-track.blocked em'),step<1);document.querySelectorAll('.gateway-track.blocked .track-wire b').forEach(el=>pending(el,step<1));$('gateway-caption').textContent=['정책 결과의 전달','정책 적용 경로의 제출 중단','다른 경로의 모의 제출'][step];break;
-      case 7:pathCase(step===0?'no_path':'below');break;
-      case 8:proofCase(step===0?'below':'boundary');break;
-      case 9:blockCase(step===0?'boundary':'skipped');break;
-      case 10:closingStep(step);break;
+      case 6:pending(document.querySelector('.policy-path.block'),step<2);document.querySelectorAll('.policy-path.warn strong,.policy-path.warn small').forEach(el=>pending(el,step<1));document.querySelectorAll('.policy-path.block strong,.policy-path.block small').forEach(el=>pending(el,step<3));break;
+      case 7:pending(document.querySelector('.gateway-track.open'),step<2);pending($('gateway-blocked'),step<1);pending(document.querySelector('.gateway-track.blocked em'),step<1);document.querySelectorAll('.gateway-track.blocked .track-wire b').forEach(el=>pending(el,step<1));$('gateway-caption').textContent=['정책 결과의 전달','정책 적용 경로의 제출 중단','다른 경로의 모의 제출'][step];break;
+      case 8:pathCase(step===0?'no_path':'below');break;
+      case 9:proofCase(step===0?'below':'boundary');break;
+      case 10:blockCase(step===0?'boundary':'skipped');break;
+      case 11:closingStep(step);break;
     }
     slide.querySelectorAll('.figure > *').forEach(el=>{
       if(established.has(el.outerHTML)||el.classList.contains('pending'))return;

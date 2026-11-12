@@ -1,5 +1,6 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react'
+import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 
@@ -18,9 +19,27 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    ...(mode === 'presentation' ? {
+      define: { 'process.env.NODE_ENV': JSON.stringify('production') },
+      build: { lib: { entry: fileURLToPath(new URL('./src/presentation/entry.tsx', import.meta.url)), name: 'OfflineDemo', formats: ['iife' as const], fileName: () => 'offline-demo.js' }, cssCodeSplit: false, emptyOutDir: true },
+    } : {}),
     // .env.production 같은 파일의 값도 읽도록 loadEnv 결과를 쓴다(셸 환경 변수가 우선).
     base: env.VITE_BASE_PATH || '/',
-    plugins: [react()],
+    plugins: [react(), {
+      name: 'workspace-presentation',
+      configureServer(server) {
+        // Serve the standalone deck beside the real UI so the interactive demo shares its origin.
+        server.middlewares.use('/presentation', async (req, res, next) => {
+          if (!['/', '', '/index.html'].includes((req.url ?? '').split('?')[0]) || !['GET', 'HEAD'].includes(req.method ?? '')) return next()
+          try {
+            const html = await readFile(fileURLToPath(new URL('../../presentation/index.html', import.meta.url)), 'utf8')
+            res.setHeader('Content-Type', 'text/html; charset=utf-8')
+            res.setHeader('Cache-Control', 'no-store')
+            res.end(req.method === 'HEAD' ? '' : html)
+          } catch { next() }
+        })
+      },
+    }],
     resolve: {
       alias: { '@contracts': contractsDir },
     },
